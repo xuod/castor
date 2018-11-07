@@ -81,7 +81,6 @@ def create_fits(fitsname, var, header=None):
 #
 
 
-import smtplib
 def send_email(subject='Howdy !', message='This is Python talking to you !', to_addr_list=[], cc_addr_list=[]):
     """
     Send an email from dummypython address :)
@@ -89,8 +88,9 @@ def send_email(subject='Howdy !', message='This is Python talking to you !', to_
     from http://stackoverflow.com/questions/10147455/how-to-send-an-email-with-gmail-as-provider-using-python
 
     """
+    import os,smtplib
 
-    header  = 'From: dummypython@gmail.com\n'
+    header  = 'From: %s\n'%os.environ['CASTOREMAIL']
     header += 'To: %s\n' % ','.join(to_addr_list)
     header += 'Cc: %s\n' % ','.join(cc_addr_list)
     header += 'Subject: %s\n\n' % subject
@@ -99,8 +99,8 @@ def send_email(subject='Howdy !', message='This is Python talking to you !', to_
     server = smtplib.SMTP('smtp.gmail.com:587')
     server.ehlo()
     server.starttls()
-    server.login('dummypython@gmail.com','rocambolesque')
-    problems = server.sendmail('dummypython@gmail.com', to_addr_list, message)
+    server.login(os.environ['CASTOREMAIL'],os.environ['CASTORPASS'])
+    problems = server.sendmail('os.environ['CASTOREMAIL'], to_addr_list, message)
     server.quit()
 #
 
