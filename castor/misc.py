@@ -82,7 +82,7 @@ def create_fits(fitsname, var, header=None):
 
 
 import smtplib
-def send_email(subject='Howdy !', message='This is Python talking to you !', to_addr_list=['cdoux@apc.in2p3.fr'], cc_addr_list=[]):
+def send_email(subject='Howdy !', message='This is Python talking to you !', to_addr_list=[], cc_addr_list=[]):
     """
     Send an email from dummypython address :)
 
