@@ -204,7 +204,101 @@ def maskmap(hpmap, binarymask, fill_UNSEEN=False):
     hpmap[np.logical_not(binarymask.astype(bool))] = x
 #
 
+import skymapper as skm
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap=None, cb_label=None, nside_out=True):
+    """
+    Plot a healpix masked map using skymapper.
+
+    Parameters
+    ----------
+    obs : array
+        Healpix map.
+    mask : array
+        Mask map.
+    projection : type
+        - 'DESY3', in which case it uses precomputed best projection for the Y3 footprint,
+        - a predefined skymapper projection objectself,
+        - or None, if which case the projection is infered from the mask.
+    filename : string
+        If not None, the name of the file to save the figure (the default is None).
+    vmax : type
+        - a float, in which case the color scale goes from -vmax to +vmax
+        - 'best', in which case skymapper uses the 10-90 percentiles
+        - None, in which case the min/max values of `obs` are used.
+    cmap : type
+        Color map (the default is None).
+    cb_label : string
+        Label of the color bar (the default is None).
+    nside_out : bool or int
+        Whether to degrade obs to make if faster or the nside to use (the default
+        is True, in which case nside=256 is used).
+
+    Returns
+    -------
+    type
+        Description of returned object.
+
+    Raises
+    -------
+    ExceptionName
+        Why the exception is raised.
+
+    """
+    import skymapper as skm
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    fig = plt.figure(figsize=(10,6))
+    ax = fig.add_subplot(111)
+
+    nside_in = hp.npix2nside(len(mask))
+    theta, phi = hp.pix2ang(nside, np.arange(len(mask))[mask.astype(bool)])
+    ra, dec = thetaphi2radec(theta, phi)
+
+    if projection == 'DESY3':
+        # define the best Albers projection for the footprint
+        # minimizing the variation in distortion
+        # crit = skm.meanDistortion
+        # proj = skm.Albers.optimize(a['ra'], a['dec'], crit=crit)
+        proj = skm.Albers( 28.51234891, -43.90175288, -55.63596295, -32.39570739)
+    else :
+        if proj is None:
+            crit = skm.meanDistortion
+            proj = skm.Albers.optimize(ra, dec, crit=crit)
+
+    # construct map: will hold figure and projection
+    # the outline of the sphere can be styled with kwargs for matplotlib Polygon
+    map = skm.Map(proj, ax=ax)
+
+    # add graticules, separated by 15 deg
+    # the lines can be styled with kwargs for matplotlib Line2D
+    # additional arguments for formatting the graticule labels
+    # sep = 15
+    map.grid()
+    map.focus(ra, dec)
+
+    obs_plot = np.copy(obs)
+    maskmap(obs_plot, mask, fill_UNSEEN=False)
+    if nside_out:
+        if type(nside_out) is int:
+            obs_plot = hp.ud_grade(obs_plot, nside_out=nside_out)
+        else:
+            obs_plot = hp.ud_grade(obs_plot, nside_out=256)
+
+    if type(vmax) is float:
+        mappable = map.healpix(obs_plot, cmap=cmap, vmin=-vmax, vmax=vmax)
+    if vmax == 'best' : # skymapper uses 10-90 percentiles
+        mappable = map.healpix(obs_plot, cmap=cmap)
+    if vmax is None :
+        mappable = map.healpix(obs_plot, cmap=cmap, vmin=np.min(obs_plot), vmax=np.max(obs_plot))
+
+    map.colorbar(mappable, cb_label=cb_label)
+
+    plt.tight_layout()
+
+    if filename is not None:
+        plt.savefig(filename, dpi=300)
 
 ############################################
 #### Transform .ply masks to Healpix maps
