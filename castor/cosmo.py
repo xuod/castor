@@ -203,9 +203,6 @@ def maskmap(hpmap, binarymask, fill_UNSEEN=False):
     hpmap[np.logical_not(binarymask.astype(bool))] = x
 #
 
-import skymapper as skm
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
 def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap=None, cb_label=None, nside_out=True):
     """
     Plot a healpix masked map using skymapper.
@@ -246,6 +243,7 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
 
     """
     import skymapper as skm
+    import matplotlib as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     fig = plt.figure(figsize=(10,6))
