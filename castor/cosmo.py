@@ -53,14 +53,14 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     """
 
+    quantity = np.atleast_2d(quantity)
+
     if weight is not None:
         assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
         assert np.all(weight > 0.), "[make_healpix_map] weight is not strictly positive"
         weight = np.atleast_2d(weight)
     else:
         weight = np.ones_like(quantity)
-
-    quantity = np.atleast_2d(quantity)
 
     assert len(ra) == len(dec) == quantity.shape[1] == weight.shape[1], "[make_healpix_map] arrays don't have the same length"
 
