@@ -266,7 +266,7 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
         # proj = skm.Albers.optimize(a['ra'], a['dec'], crit=crit)
         proj = skm.Albers( 28.51234891, -43.90175288, -55.63596295, -32.39570739)
     else :
-        if proj is None:
+        if projection is None:
             crit = skm.meanDistortion
             proj = skm.Albers.optimize(ra, dec, crit=crit)
 
