@@ -77,8 +77,11 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     # Counting objects and getting the mask
     np.add.at(count, ipix, 1.)
+
     if mask is None:
-        mask = (count > 0)
+        bool_mask = (count > 0)
+    else:
+        bool_mask = mask.astype(bool)
 
     # Value to fill outside the mask
     x = hp.UNSEEN if fill_UNSEEN else 0.0
@@ -90,12 +93,15 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
         outmap = np.zeros(npix, dtype=float)
         np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
-        outmap[mask] /= sum_w[mask]
-        outmap[np.logical_not(mask)] = x
+        outmap[bool_mask] /= sum_w[bool_mask]
+        outmap[np.logical_not(bool_mask)] = x
 
         outmaps.append(outmap)
 
-    return outmaps, count, mask.astype(float)
+    if mask is None:
+        return outmaps, count, bool_mask.astype(float)
+    else:
+        return outmaps, count, mask
 #
 
 
