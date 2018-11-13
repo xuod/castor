@@ -250,7 +250,7 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
     ax = fig.add_subplot(111)
 
     nside_in = hp.npix2nside(len(mask))
-    theta, phi = hp.pix2ang(nside, np.arange(len(mask))[mask.astype(bool)])
+    theta, phi = hp.pix2ang(nside_in, np.arange(len(mask))[mask.astype(bool)])
     ra, dec = thetaphi2radec(theta, phi)
 
     if projection == 'DESY3':
