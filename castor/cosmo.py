@@ -89,7 +89,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
         np.add.at(sum_w, ipix, weight[:,i])
 
         outmap = np.zeros(npix, dtype=float)
-        np.add.at(outmap, ipix, quantity[:,i]*weight[:,i])
+        np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
         outmap[mask] /= sum_w[mask]
         outmap[np.logical_not(mask)] = x
 
