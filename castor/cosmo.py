@@ -1,4 +1,3 @@
-import castor as ca
 import healpy as hp
 import numpy as np
 import astropy.coordinates as coord
@@ -63,7 +62,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     quantity = np.atleast_2d(quantity)
 
-    assert len(ra) == len(dec) == quantity.shape[0] == weight.shape[0], "[make_healpix_map] arrays don't have the same length"
+    assert len(ra) == len(dec) == quantity.shape[1] == weight.shape[1], "[make_healpix_map] arrays don't have the same length"
 
     npix = hp.nside2npix(nside)
 
