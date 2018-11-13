@@ -401,3 +401,43 @@ def logspace(xmin, xmax, n):
     """
     return np.logspace(np.log10(xmin), np.log10(xmax), n)
 #
+
+def no_outliers(points_plop, thresh=3.5, return_masked=True,):
+    """
+    Finds outliers in an array and return an array where outliers are masked or
+    mask itself.
+
+    Parameters:
+    -----------
+        points : An numobservations by numdimensions array of observations
+        thresh : The modified z-score to use as a threshold. Observations with
+            a modified z-score (based on the median absolute deviation) greater
+            than this value will be classified as outliers.
+        return_masked : if True, return the masked array, otherwise return the
+            mask.
+
+    Returns:
+    --------
+        mask : A numobservations-length boolean array.
+
+    References:
+    ----------
+        Boris Iglewicz and David Hoaglin (1993), "Volume 16: How to Detect and
+        Handle Outliers", The ASQC Basic References in Quality Control:
+        Statistical Techniques, Edward F. Mykytka, Ph.D., Editor.
+    """
+    points = np.array(points_plop)
+
+    if len(points.shape) == 1:
+        points = points[:,None]
+    median = np.median(points, axis=0)
+    diff = np.sum((points - median)**2, axis=-1)
+    diff = np.sqrt(diff)
+    med_abs_deviation = np.median(diff)
+
+    modified_z_score = 0.6745 * diff / med_abs_deviation
+
+    if return_masked:
+        return np.ma.masked_array(data=points, mask=modified_z_score > thresh)
+    else:
+        return modified_z_score > thresh

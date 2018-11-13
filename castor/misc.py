@@ -100,7 +100,7 @@ def send_email(subject='Howdy !', message='This is Python talking to you !', to_
     server.ehlo()
     server.starttls()
     server.login(os.environ['CASTOREMAIL'],os.environ['CASTORPASS'])
-    problems = server.sendmail('os.environ['CASTOREMAIL'], to_addr_list, message)
+    problems = server.sendmail(os.environ['CASTOREMAIL'], to_addr_list, message)
     server.quit()
 #
 
