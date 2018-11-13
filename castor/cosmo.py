@@ -84,7 +84,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     x = hp.UNSEEN if fill_UNSEEN else 0.0
 
     # Create the maps
-    for i in range(quantity.shape[1]):
+    for i in range(quantity.shape[0]):
         sum_w = np.zeros(npix, dtype=float)
         np.add.at(sum_w, ipix, weight[i,:])
 
