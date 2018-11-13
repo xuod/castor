@@ -243,7 +243,7 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
 
     """
     import skymapper as skm
-    import matplotlib as plt
+    import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
     fig = plt.figure(figsize=(10,6))
