@@ -118,8 +118,8 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
         extra = {}
         extra['count_tot_in_mask'] = np.sum(count[bool_mask])
         extra['count_per_pixel_in_mask'] = extra['count_tot_in_mask'] * 1. / np.sum(bool_mask.astype(int))
-        extra['count_per_steradian_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2nside2pixarea(nside, degrees=False)
-        extra['count_per_sqdegree_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2nside2pixarea(nside, degrees=True)
+        extra['count_per_steradian_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2pixarea(nside, degrees=False)
+        extra['count_per_sqdegree_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2pixarea(nside, degrees=True)
         extra['count_per_sqarcmin_in_mask'] = extra['count_per_sqdegree_in_mask'] * 60.**2
         extra['ipix_masked'] = np.ma.array(ipix, bool_mask[ipix])
 
