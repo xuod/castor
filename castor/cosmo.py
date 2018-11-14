@@ -86,6 +86,8 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     # Value to fill outside the mask
     x = hp.UNSEEN if fill_UNSEEN else 0.0
 
+    count[np.logical_not(bool_mask)] = x
+
     # Create the maps
     for i in range(quantity.shape[0]):
         sum_w = np.zeros(npix, dtype=float)
@@ -252,6 +254,8 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
     import matplotlib.pyplot as plt
     from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+    assert obs.shape == mask.shape, "[plot_hp_skymapper] `obs` and `mask` don't have the same shape."
+
     fig = plt.figure(figsize=(10,6))
     ax = fig.add_subplot(111)
 
@@ -283,6 +287,7 @@ def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap
 
     obs_plot = np.copy(obs)
     maskmap(obs_plot, mask, fill_UNSEEN=False)
+
     if nside_out:
         if type(nside_out) is int:
             obs_plot = hp.ud_grade(obs_plot, nside_out=nside_out)
