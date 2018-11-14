@@ -25,7 +25,7 @@ def thetaphi2radec(theta,phi):
 #
 
 
-def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSEEN=False):
+def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSEEN=False, return_extra=False):
     """
     Creates healpix maps of quantity observed at ra, dec (in degrees) by taking
     the average of quantity in each pixel.
@@ -41,11 +41,18 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     nside : int
         `nside` parameter for healpix.
     mask : array
-        If None, the mask is created and has value 1 in pixels that contain at least one object, 0 elsewhere.
+        If None, the mask is created and has value 1 in pixels that contain at
+        least one object, 0 elsewhere.
     weight : type
-        Weights of objects (the default is None, in which case all objects have weight 1). Must be the same size as `quantity`.
+        Weights of objects (the default is None, in which case all objects have
+        weight 1). Must be the same size as `quantity`.
     fill_UNSEEN : boolean
-        If `fill_UNSEEN` is True, pixels outside the mask are filled with hp.UNSEEN, 0 otherwise (the default is False).
+        If `fill_UNSEEN` is True, pixels outside the mask are filled with
+        hp.UNSEEN, 0 otherwise (the default is False).
+    return_extra : boolean
+        If True, a dictionnary is returned that contains count statistics and
+        the masked `ipix` array to allow for statistics on the quantities to be
+        computed.
 
     Returns
     -------
@@ -69,23 +76,25 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     if mask is not None:
         assert len(mask)==npix, "[make_healpix_map] mask array does not have the right length"
 
+    # Value to fill outside the mask
+    x = hp.UNSEEN if fill_UNSEEN else 0.0
+
     count = np.zeros(npix, dtype=float)
     outmaps = []
 
     # Getting pixels for each object
     ipix = hp.ang2pix(nside, (90-dec)/180*np.pi, ra/180*np.pi)
 
-    # Counting objects and getting the mask
+    # Counting objects in pixels
     np.add.at(count, ipix, 1.)
 
+    # Creating the mask if it does not exist
     if mask is None:
         bool_mask = (count > 0)
     else:
         bool_mask = mask.astype(bool)
 
-    # Value to fill outside the mask
-    x = hp.UNSEEN if fill_UNSEEN else 0.0
-
+    # Masking the count in the masked area
     count[np.logical_not(bool_mask)] = x
 
     # Create the maps
@@ -101,9 +110,22 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
         outmaps.append(outmap)
 
     if mask is None:
-        return outmaps, count, bool_mask.astype(float)
+        returned_mask = bool_mask.astype(float)
     else:
-        return outmaps, count, mask
+        returned_mask = mask
+
+    if return_extra:
+        extra = {}
+        extra['count_tot_in_mask'] = np.sum(count[bool_mask])
+        extra['count_per_pixel_in_mask'] = extra['count_tot_in_mask'] * 1. / np.sum(bool_mask.astype(int))
+        extra['count_per_steradian_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2nside2pixarea(nside, degrees=False)
+        extra['count_per_sqdegree_in_mask'] = extra['count_per_pixel_in_mask'] / hp.nside2nside2pixarea(nside, degrees=True)
+        extra['count_per_sqarcmin_in_mask'] = extra['count_per_sqdegree_in_mask'] * 60.**2
+        extra['ipix_masked'] = np.ma.array(ipix, bool_mask[ipix])
+
+        return outmaps, count, returned_mask, extra
+    else:
+        return outmaps, count, returned_mask
 #
 
 
