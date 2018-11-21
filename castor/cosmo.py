@@ -60,16 +60,19 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     """
 
-    quantity = np.atleast_2d(quantity)
+    if quantity is not None:
+        quantity = np.atleast_2d(quantity)
 
-    if weight is not None:
-        assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
-        assert np.all(weight > 0.), "[make_healpix_map] weight is not strictly positive"
-        weight = np.atleast_2d(weight)
-    else:
-        weight = np.ones_like(quantity)
+        if weight is not None:
+            assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
+            assert np.all(weight > 0.), "[make_healpix_map] weight is not strictly positive"
+            weight = np.atleast_2d(weight)
+        else:
+            weight = np.ones_like(quantity)
 
-    assert len(ra) == len(dec) == quantity.shape[1] == weight.shape[1], "[make_healpix_map] arrays don't have the same length"
+        assert quantity.shape[1] == weight.shape[1], "[make_healpix_map] quantity/weight arrays don't have the same length"
+
+        assert len(ra) == len(dec), "[make_healpix_map] ra/dec arrays don't have the same length"
 
     npix = hp.nside2npix(nside)
 
@@ -98,16 +101,17 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     count[np.logical_not(bool_mask)] = x
 
     # Create the maps
-    for i in range(quantity.shape[0]):
-        sum_w = np.zeros(npix, dtype=float)
-        np.add.at(sum_w, ipix, weight[i,:])
+    if quantity is not None:
+        for i in range(quantity.shape[0]):
+            sum_w = np.zeros(npix, dtype=float)
+            np.add.at(sum_w, ipix, weight[i,:])
 
-        outmap = np.zeros(npix, dtype=float)
-        np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
-        outmap[bool_mask] /= sum_w[bool_mask]
-        outmap[np.logical_not(bool_mask)] = x
+            outmap = np.zeros(npix, dtype=float)
+            np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
+            outmap[bool_mask] /= sum_w[bool_mask]
+            outmap[np.logical_not(bool_mask)] = x
 
-        outmaps.append(outmap)
+            outmaps.append(outmap)
 
     if mask is None:
         returned_mask = bool_mask.astype(float)
