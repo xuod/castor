@@ -86,7 +86,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     outmaps = []
 
     # Getting pixels for each object
-    ipix = hp.ang2pix(nside, (90-dec)/180*np.pi, ra/180*np.pi)
+    ipix = hp.ang2pix(nside, (90.0-dec)/180.0*np.pi, ra/180.0*np.pi)
 
     # Counting objects in pixels
     np.add.at(count, ipix, 1.)
@@ -99,6 +99,8 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     # Masking the count in the masked area
     count[np.logical_not(bool_mask)] = x
+    if mask is None:
+        assert np.all(count[bool_mask] > 0), "[make_healpix_map] count[bool_mask] is not positive on the provided mask !"
 
     # Create the maps
     if quantity is not None:
