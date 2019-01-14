@@ -368,7 +368,7 @@ def diag_cov_for_chi2(x, cov):
 
     """
     if not np.all(cov.T == cov) :
-        print "covariance matrix not symmetric !"
+        print("covariance matrix not symmetric !")
         raise ValueError
     else :
         w, v = np.linalg.eigh(cov)

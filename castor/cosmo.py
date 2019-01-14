@@ -135,7 +135,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 #
 
 
-def density2Ngal(densitymap, nbar, mask=None, pixel=True):
+def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
     """
     Generates a Poisson sampling of a given density map.
 
@@ -158,9 +158,11 @@ def density2Ngal(densitymap, nbar, mask=None, pixel=True):
     """
     if mask is None:
         mask = np.ones(len(densitymap), dtype=bool)
+    if completeness is None:
+        completeness = mask.astype(float)
 
     if np.any(densitymap[mask] < - 1.):
-        print("[density2Ngal] The density map has pixels below -1.")
+        print("[density2count] The density map has pixels below -1, will be clipped.")
 
     if pixel :
         nbarpix = nbar
@@ -168,20 +170,21 @@ def density2Ngal(densitymap, nbar, mask=None, pixel=True):
         nbarpix = nbar * hp.nside2pixarea(hp.npix2nside(len(densitymap)))
 
     onepdelta = np.clip(1. + densitymap, 0., np.inf)
-    onepdelta[mask.astype(bool)] = 0.
+    onepdelta[np.logical_not(mask.astype(bool))] = 0.
 
-    lamb = nbarpix * onepdelta
+    lamb = nbarpix * onepdelta * completeness
 
     return np.random.poisson(lamb)
 #
 
-def count2density(Ngal, mskfrac_map=None, mask=None):
+
+def count2density(count, mskfrac_map=None, mask=None):
     """
-    Creates a reconstructed density map from count-in-pixel map Ngal, with completeness and mask support.
+    Creates a reconstructed density map from count-in-pixel map count, with completeness and mask support.
 
     Parameters
     ----------
-    Ngal : array
+    count : array
         Healpix map of number count of object per pixel.
     mskfrac_map : array (optional)
         Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
@@ -195,7 +198,7 @@ def count2density(Ngal, mskfrac_map=None, mask=None):
 
     """
 
-    npix = len(Ngal)
+    npix = len(count)
 
     if mskfrac_map is None:
         mskfrac_map = np.ones(npix, dtype=float)
@@ -204,13 +207,13 @@ def count2density(Ngal, mskfrac_map=None, mask=None):
 
     msk = mask.astype(bool)
 
-    # Local mean density to compare Ngal with.
+    # Local mean density to compare count with.
     avg_in_pixel = np.zeros(npix, dtype=float)
-    avg_in_pixel[msk] = mskfrac_map[msk] * np.sum(Ngal[msk]) / np.sum(mskfrac_map[msk])
+    avg_in_pixel[msk] = mskfrac_map[msk] * np.sum(count[msk]) / np.sum(mskfrac_map[msk])
 
     # Density
     density = np.zeros(npix, dtype=float)
-    density[msk] = Ngal[msk] / avg_in_pixel[msk] - 1.
+    density[msk] = count[msk] / avg_in_pixel[msk] - 1.
 
     return density
 #
@@ -238,6 +241,20 @@ def maskmap(hpmap, binarymask, fill_UNSEEN=False):
 
     hpmap[np.logical_not(binarymask.astype(bool))] = x
 #
+
+
+def random_point_2dsphre(N, return_radec=True):
+    u, v = np.random.rand(2,int(N))
+    phi = 2. * np.pi * u
+    theta = np.arccos(2*v - 1.)
+    if return_radec:
+        ra = np.rad2deg(phi)
+        dec = np.rad2deg(np.pi/2-theta)
+        return ra, dec
+    else:
+        return theta, phi
+#
+
 
 def plot_hp_skymapper(obs, mask, projection=None, filename=None, vmax=None, cmap=None, cb_label=None, nside_out=True):
     """

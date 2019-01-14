@@ -48,7 +48,7 @@ def map(func, iter, verbose=True, timesleep=15.0, timeout=None):
             if (res.ready()): break
             # remaining = res._number_left
             # print "Waiting for", remaining, "task chunks to complete..."
-            print "# castor.parallel.map : tasks accomplished out of {0} : {1}".format(n, v.get())
+            print("# castor.parallel.map : tasks accomplished out of {0} : {1}".format(n, v.get()))
             time.sleep(timesleep)
 
     pool.close()

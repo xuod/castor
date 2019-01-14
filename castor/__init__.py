@@ -4,7 +4,7 @@
 # castor/__init__.py -- wraps castor in a bow.
 #
 
-import parallel, misc, plot, maths, cosmo
+from . import parallel, misc, plot, maths, cosmo
 
 import numpy
 

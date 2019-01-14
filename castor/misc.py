@@ -45,7 +45,7 @@ def funcdecl2gobjdoc(s):
     ii = s.find(")")
     s = s[i+1:ii]
     args = s.split(", ")
-    print s
+    print(s)
     for arg in args:
         if arg[:6] == "const ":
             arg = arg[6:]
@@ -55,7 +55,7 @@ def funcdecl2gobjdoc(s):
         argname = arg[i+1:]
         res += "@" + argname + ": a #" + argtype + "\n * "
     res += "\n * FIXME\n * \n * Returns: FIXME \n * \n*/"
-    print res
+    print(res)
 #
 
 

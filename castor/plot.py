@@ -381,7 +381,7 @@ class MidPointNorm(Normalize):
             vmax = + vabs
             vmin = - vabs
 
-        print "call inverse :", vmin, vmax, midpoint
+        print("call inverse :", vmin, vmax, midpoint)
         if mpl.cbook.iterable(value):
             val = np.ma.asarray(value)
             val = 2 * (val-0.5)
@@ -441,7 +441,7 @@ class SymStdNorm(Normalize):
             vmax = + vabs
             vmin = - vabs
 
-        print "call inverse :", vmin, vmax, midpoint
+        print("call inverse :", vmin, vmax, midpoint)
         if mpl.cbook.iterable(value):
             val = np.ma.asarray(value)
             val = 2 * (val-0.5)
