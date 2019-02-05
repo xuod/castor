@@ -178,7 +178,7 @@ def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
 #
 
 
-def count2density(count, mskfrac_map=None, mask=None):
+def count2density(count, completeness=None, mask=None):
     """
     Creates a reconstructed density map from count-in-pixel map count, with completeness and mask support.
 
@@ -186,7 +186,7 @@ def count2density(count, mskfrac_map=None, mask=None):
     ----------
     count : array
         Healpix map of number count of object per pixel.
-    mskfrac_map : array (optional)
+    completeness : array (optional)
         Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
     mask : array
         Binary mask of the sky (the default is None).
@@ -200,8 +200,8 @@ def count2density(count, mskfrac_map=None, mask=None):
 
     npix = len(count)
 
-    if mskfrac_map is None:
-        mskfrac_map = np.ones(npix, dtype=float)
+    if completeness is None:
+        completeness = np.ones(npix, dtype=float)
     if mask is None:
         mask = np.ones(npix, dtype=bool)
 
@@ -209,7 +209,7 @@ def count2density(count, mskfrac_map=None, mask=None):
 
     # Local mean density to compare count with.
     avg_in_pixel = np.zeros(npix, dtype=float)
-    avg_in_pixel[msk] = mskfrac_map[msk] * np.sum(count[msk]) / np.sum(mskfrac_map[msk])
+    avg_in_pixel[msk] = completeness[msk] * np.sum(count[msk]) / np.sum(completeness[msk])
 
     # Density
     density = np.zeros(npix, dtype=float)

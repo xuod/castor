@@ -104,6 +104,30 @@ def send_email(subject='Howdy !', message='This is Python talking to you !', to_
     server.quit()
 #
 
+import h5py
+def print_h5py_tree(f):
+    """
+    Print the whole tree of a h5 fileself.
+
+    Example:
+    # f = h5py.File(filename,'r')
+    # print_h5py_tree(f)
+
+    From https://stackoverflow.com/questions/34330283/how-to-differentiate-between-hdf5-datasets-and-groups-with-h5py
+    
+    """
+    def h5py_dataset_iterator(g, prefix=''):
+        for key in g.keys():
+            item = g[key]
+            path = '{}/{}'.format(prefix, key)
+            if isinstance(item, h5py.Dataset): # test for dataset
+                yield (path, item)
+            elif isinstance(item, h5py.Group): # test for group (go down)
+                print(path)
+                yield from h5py_dataset_iterator(item, path)
+    for (path, dset) in h5py_dataset_iterator(f):
+        print(path, dset)
+
 ##############################
 # Use the tqdm package instead
 ##############################

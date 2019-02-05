@@ -395,7 +395,7 @@ class MidPointNorm(Normalize):
                 return  val*abs(vmin-midpoint) + midpoint
             else:
                 return  val*abs(vmax-midpoint) + midpoint
-
+#
 
 class SymStdNorm(Normalize):
     """
@@ -455,6 +455,104 @@ class SymStdNorm(Normalize):
                 return  val*abs(vmin-midpoint) + midpoint
             else:
                 return  val*abs(vmax-midpoint) + midpoint
+#
+
+from matplotlib.ticker import Locator
+class MinorSymLogLocator(Locator):
+    """
+    From https://stackoverflow.com/questions/20470892/how-to-place-minor-ticks-on-symlog-scale
+
+    Dynamically find minor tick positions based on the positions of
+    major ticks for a symlog scaling.
+
+    Usage example: ax.yaxis.set_minor_locator(MinorSymLogLocator(1e-1))
+    """
+    def __init__(self, linthresh):
+        """
+        Ticks will be placed between the major ticks.
+        The placement is linear for x between -linthresh and linthresh,
+        otherwise its logarithmically
+        """
+        self.linthresh = linthresh
+
+    def __call__(self):
+        'Return the locations of the ticks'
+        majorlocs = self.axis.get_majorticklocs()
+
+        # iterate through minor locs
+        minorlocs = []
+
+        # handle the lowest part
+        for i in range(1, len(majorlocs)):
+            majorstep = majorlocs[i] - majorlocs[i-1]
+            if abs(majorlocs[i-1] + majorstep/2) < self.linthresh:
+                ndivs = 10
+            else:
+                ndivs = 9
+            minorstep = majorstep / ndivs
+            locs = np.arange(majorlocs[i-1], majorlocs[i], minorstep)[1:]
+            minorlocs.extend(locs)
+
+        return self.raise_if_exceeds(np.array(minorlocs))
+
+    def tick_values(self, vmin, vmax):
+        raise NotImplementedError('Cannot get tick locations for a '
+                                  '%s type.' % type(self))
+#
+
+import matplotlib.scale as mscale
+import matplotlib.transforms as mtransforms
+import matplotlib.ticker as ticker
+
+class SquareRootScale(mscale.ScaleBase):
+    """
+    ScaleBase class for generating square root scale.
+
+    Usage example: axis.set_yscale('squareroot')
+
+    """
+
+    name = 'squareroot'
+
+    def __init__(self, axis, **kwargs):
+        mscale.ScaleBase.__init__(self)
+
+    def set_default_locators_and_formatters(self, axis):
+        axis.set_major_locator(ticker.AutoLocator())
+        axis.set_major_formatter(ticker.ScalarFormatter())
+        axis.set_minor_locator(ticker.NullLocator())
+        axis.set_minor_formatter(ticker.NullFormatter())
+
+    def limit_range_for_scale(self, vmin, vmax, minpos):
+        return  max(0., vmin), vmax
+
+    class SquareRootTransform(mtransforms.Transform):
+        input_dims = 1
+        output_dims = 1
+        is_separable = True
+
+        def transform_non_affine(self, a):
+            return np.array(a)**0.5
+
+        def inverted(self):
+            return SquareRootScale.InvertedSquareRootTransform()
+
+    class InvertedSquareRootTransform(mtransforms.Transform):
+        input_dims = 1
+        output_dims = 1
+        is_separable = True
+
+        def transform(self, a):
+            return np.array(a)**2
+
+        def inverted(self):
+            return SquareRootScale.SquareRootTransform()
+
+    def get_transform(self):
+        return self.SquareRootTransform()
+
+mscale.register_scale(SquareRootScale)
+#
 
 class Radar(object):
     """
