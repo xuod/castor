@@ -178,7 +178,7 @@ def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
 #
 
 
-def count2density(count, completeness=None, mask=None):
+def count2density(count, mask=None, completeness=None):
     """
     Creates a reconstructed density map from count-in-pixel map count, with completeness and mask support.
 
@@ -186,10 +186,10 @@ def count2density(count, completeness=None, mask=None):
     ----------
     count : array
         Healpix map of number count of object per pixel.
-    completeness : array (optional)
-        Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
     mask : array
         Binary mask of the sky (the default is None).
+    completeness : array (optional)
+        Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
 
     Returns
     -------

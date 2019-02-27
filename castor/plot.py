@@ -1,38 +1,44 @@
+import matplotlib.scale as mscale
+from matplotlib.ticker import Locator
+from matplotlib.colors import Normalize
+import matplotlib.ticker as ticker
+import matplotlib.transforms as mtransforms
 import matplotlib.pyplot as plt
 import matplotlib.colors as clr
 import matplotlib as mpl
 import numpy as np
 
-def mat_symlog(my_matrix, vmin=None, vmax=None, logthresh = 5):
+
+def mat_symlog(my_matrix, vmin=None, vmax=None, logthresh=5):
     """
     Plot my_matrix with a symmetric logarithmic scale
 
     from http://stackoverflow.com/questions/11138706/colorbar-for-imshow-centered-on-0-and-with-symlog-scale
 
     """
-    img = plt.matshow( my_matrix ,
-                vmin=vmin, vmax=vmax,
-                norm=clr.SymLogNorm(10**-logthresh) )
+    img = plt.matshow(my_matrix,
+                      vmin=vmin, vmax=vmax,
+                      norm=clr.SymLogNorm(10**-logthresh))
 
-    if vmin is None :
+    if vmin is None:
         vmin = np.min(my_matrix)
-    if vmax is None :
+    if vmax is None:
         vmax = np.max(my_matrix)
-    maxlog = int(np.ceil( np.log10(vmax) ))
-    minlog = int(np.ceil( np.log10(-vmin) ))
+    maxlog = int(np.ceil(np.log10(vmax)))
+    minlog = int(np.ceil(np.log10(-vmin)))
 
-    #generate logarithmic ticks
-    tick_locations = ([-(10**x) for x in xrange(minlog,-logthresh-1,-1)]
-                    +[0.0]
-                    +[(10**x) for x in xrange(-logthresh,maxlog+1)] )
+    # generate logarithmic ticks
+    tick_locations = ([-(10**x) for x in xrange(minlog, -logthresh-1, -1)]
+                      + [0.0]
+                      + [(10**x) for x in xrange(-logthresh, maxlog+1)])
 
     cb = plt.colorbar(ticks=tick_locations, format='%.2e')
 
-    return img,cb
+    return img, cb
 #
 
 
-def scatter_hist(x,y, bins, xlabel=None, ylabel=None, *args, **kwargs):
+def scatter_hist(x, y, bins, xlabel=None, ylabel=None, *args, **kwargs):
     """
     Makes a scatter plot with histograms of x/y on the upper/right side (plus 1 to 5 sigma lines)
 
@@ -48,7 +54,7 @@ def scatter_hist(x,y, bins, xlabel=None, ylabel=None, *args, **kwargs):
     rect_histy = [left_h, bottom, 0.2, height]
 
     # start with a rectangular Figure
-    plt.figure(1)#, figsize=(8, 8))
+    plt.figure(1)  # , figsize=(8, 8))
 
     axScatter = plt.axes(rect_scatter)
     plt.xlabel(xlabel)
@@ -64,7 +70,6 @@ def scatter_hist(x,y, bins, xlabel=None, ylabel=None, *args, **kwargs):
     # the scatter plot:
     axScatter.scatter(x, y, **kwargs)
 
-
     # now determine nice limits by hand:
     # binwidth = 0.25
     # xymax = np.max([np.max(np.fabs(x)), np.max(np.fabs(y))])
@@ -78,18 +83,17 @@ def scatter_hist(x,y, bins, xlabel=None, ylabel=None, *args, **kwargs):
     meanx = np.mean(x)
     stdx = np.std(x)
     axHistx.axvline(x=meanx, ls='-', c='r')
-    for i in range(1,6):
-            axHistx.axvline(x=meanx + i * stdx, ls='--', c='r', alpha=1./float(i))
-            axHistx.axvline(x=meanx - i * stdx, ls='--', c='r', alpha=1./float(i))
-
+    for i in range(1, 6):
+        axHistx.axvline(x=meanx + i * stdx, ls='--', c='r', alpha=1./float(i))
+        axHistx.axvline(x=meanx - i * stdx, ls='--', c='r', alpha=1./float(i))
 
     axHisty.hist(y, bins=bins, linewidth=0, orientation='horizontal')
     meany = np.mean(y)
     stdy = np.std(y)
-    axHisty.axhline(y=meany, ls='-', c='r')#, orientation='horizontal')
-    for i in range(1,6):
-            axHisty.axhline(y=meany + i * stdy, ls='--', c='r', alpha=1./float(i))
-            axHisty.axhline(y=meany - i * stdy, ls='--', c='r', alpha=1./float(i))
+    axHisty.axhline(y=meany, ls='-', c='r')  # , orientation='horizontal')
+    for i in range(1, 6):
+        axHisty.axhline(y=meany + i * stdy, ls='--', c='r', alpha=1./float(i))
+        axHisty.axhline(y=meany - i * stdy, ls='--', c='r', alpha=1./float(i))
 
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
@@ -111,10 +115,11 @@ def colorz(x, y, z, plotfct=plt.plot, cmapname='jet', *args, **kwargs):
     cmap = plt.get_cmap(cmapname)
     norm = mpl.colors.Normalize(vmin=zmin, vmax=zmax)
 
-    if x.ndim > 1 :
+    if x.ndim > 1:
         for i in range(len(z)):
-            plotfct(x[i], y[i], c=cmap((z[i]-zmin)/(zmax-zmin)), *args, **kwargs)
-    else :
+            plotfct(x[i], y[i], c=cmap(
+                (z[i]-zmin)/(zmax-zmin)), *args, **kwargs)
+    else:
         for i in range(len(z)):
             plotfct(x, y[i], c=cmap((z[i]-zmin)/(zmax-zmin)), *args, **kwargs)
 
@@ -168,6 +173,7 @@ def plot_linearlog(x, y, xtr, *args, **kwargs):
     plt.setp(axLog.get_yticklabels(), visible=False)
 #
 
+
 def plot_loglinear(x, y, xtr, *args, **kwargs):
     """
     Plots x,y with log scale for x < xtr and a linear scale for x>xtr
@@ -195,6 +201,7 @@ def plot_loglinear(x, y, xtr, *args, **kwargs):
     axLog.yaxis.set_ticks_position('right')
     plt.setp(axLog.get_yticklabels(), visible=False)
 #
+
 
 def scatter_cov(x, y, cov=None, covcmap=plt.cm.YlOrBr_r, label=None, *args, **kwargs):
     """"
@@ -226,17 +233,19 @@ def scatter_cov(x, y, cov=None, covcmap=plt.cm.YlOrBr_r, label=None, *args, **kw
 
     z0 = [np.mean(x), np.mean(y)]
 
-    if cov is None :
-        cov = np.cov(np.vstack([x,y]), ddof=1)
+    if cov is None:
+        cov = np.cov(np.vstack([x, y]), ddof=1)
 
     prec = np.linalg.inv(cov)
 
     mahal = np.array([mahalanobis(z, z0, prec) for z in zz]).reshape(xx.shape)
 
-    cov_contour = plt.contour(xx, yy, mahal, levels=range(1,7), cmap=covcmap, linestyles='dashed')
+    cov_contour = plt.contour(xx, yy, mahal, levels=range(
+        1, 7), cmap=covcmap, linestyles='dashed')
 
-    if label is not None :
-        plt.legend(cov_contour.collections[1], label=label, loc="upper right", borderaxespad=0)
+    if label is not None:
+        plt.legend(
+            cov_contour.collections[1], label=label, loc="upper right", borderaxespad=0)
 
     plt.xlim(xlim)
     plt.ylim(ylim)
@@ -244,6 +253,35 @@ def scatter_cov(x, y, cov=None, covcmap=plt.cm.YlOrBr_r, label=None, *args, **kw
     return a
 
 #
+
+
+def plot_cond_dist(X, Ys, cmap=None):
+    """
+    Plots the conditional distribution of Ys given X, P(Y,X), using the `fastKDE` package given a set of Y evaluated at the same X.
+
+    Parameters
+    ----------
+    X : [type]
+        X variable, array of size N.
+    Ys : [type]
+        Y variable, array of size (N,M) for M samples of the Y variable.
+    cmap : [type], optional
+        Color map to use (the default is None, which defaults to mpl.cm.gist_heat_r)
+
+    """   
+    from fastkde import fastKDE
+    pxy, (xx, yy) = fastKDE.conditional(np.hstack(Ys), np.tile(X, Ys.shape[0]))
+    xx_mask = (xx > np.min(X)) & (xx < np.max(X))
+    yy_mask = (yy > np.min(Ys)) & (yy < np.max(Ys))
+    xx = xx[xx_mask]
+    yy = yy[yy_mask]
+    pxy = pxy[np.ix_(yy_mask, xx_mask)]
+    if cmap is None:
+        cmap = mpl.cm.gist_heat_r
+    plt.contourf(xx, yy, pxy, 256, cmap=cmap)
+    plt.plot(xx, yy[np.argmax(pxy, axis=0)], c='w', lw=1, ls='--')
+#
+
 
 def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
     '''
@@ -299,7 +337,6 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
     return newcmap
 #
 
-from matplotlib.colors import Normalize
 
 class MidPointNorm(Normalize):
     """
@@ -310,7 +347,7 @@ class MidPointNorm(Normalize):
     """
 
     def __init__(self, midpoint=0, vmin=None, vmax=None, clip=False, symmetric=True):
-        Normalize.__init__(self,vmin, vmax, clip)
+        Normalize.__init__(self, vmin, vmax, clip)
         self.midpoint = midpoint
         self.symmetric = symmetric
 
@@ -325,7 +362,7 @@ class MidPointNorm(Normalize):
             self.vmax = vabs
             self.vmin = -vabs
 
-        else :
+        else:
             self.autoscale_None(result)
 
         vmin, vmax, midpoint = self.vmin, self.vmax, self.midpoint
@@ -333,34 +370,35 @@ class MidPointNorm(Normalize):
         if not (vmin <= midpoint <= vmax):
             raise ValueError("midpoint must be between maxvalue and minvalue.")
         elif vmin == vmax:
-            result.fill(0) # Or should it be all masked? Or 0.5?
+            result.fill(0)  # Or should it be all masked? Or 0.5?
         elif vmin > vmax:
             raise ValueError("maxvalue must be bigger than minvalue")
         else:
-        # if vmin == vmax:
-        #     result.fill(0) # Or should it be all masked? Or 0.5?
-        # elif vmin > vmax:
-        #     raise ValueError("maxvalue must be bigger than minvalue")
-        # else:
-        #     if midpoint < vmin:
-        #         vmin = midpoint
-        #     if vmax < midpoint:
-        #         vmax = midpoint
+            # if vmin == vmax:
+            #     result.fill(0) # Or should it be all masked? Or 0.5?
+            # elif vmin > vmax:
+            #     raise ValueError("maxvalue must be bigger than minvalue")
+            # else:
+            #     if midpoint < vmin:
+            #         vmin = midpoint
+            #     if vmax < midpoint:
+            #         vmax = midpoint
             # print vmin, midpoint, vmax
             vmin = float(vmin)
             vmax = float(vmax)
 
             if clip:
                 mask = ma.getmask(result)
-                result = ma.array(np.clip(result.filled(vmax), vmin, vmax), mask=mask)
+                result = ma.array(
+                    np.clip(result.filled(vmax), vmin, vmax), mask=mask)
 
             # ma division is very slow; we can take a shortcut
             resdat = result.data
 
-            #First scale to -1 to 1 range, than to from 0 to 1.
+            # First scale to -1 to 1 range, than to from 0 to 1.
             resdat -= midpoint
-            resdat[resdat>0] /= abs(vmax - midpoint)
-            resdat[resdat<0] /= abs(vmin - midpoint)
+            resdat[resdat > 0] /= abs(vmax - midpoint)
+            resdat[resdat < 0] /= abs(vmin - midpoint)
 
             resdat /= 2.
             resdat += 0.5
@@ -385,17 +423,18 @@ class MidPointNorm(Normalize):
         if mpl.cbook.iterable(value):
             val = np.ma.asarray(value)
             val = 2 * (val-0.5)
-            val[val>0]  *= abs(vmax - midpoint)
-            val[val<0] *= abs(vmin - midpoint)
+            val[val > 0] *= abs(vmax - midpoint)
+            val[val < 0] *= abs(vmin - midpoint)
             val += midpoint
             return val
         else:
             val = 2 * (val - 0.5)
             if val < 0:
-                return  val*abs(vmin-midpoint) + midpoint
+                return val*abs(vmin-midpoint) + midpoint
             else:
-                return  val*abs(vmax-midpoint) + midpoint
+                return val*abs(vmax-midpoint) + midpoint
 #
+
 
 class SymStdNorm(Normalize):
     """
@@ -406,7 +445,7 @@ class SymStdNorm(Normalize):
     """
 
     def __init__(self, Nsigma=3, vmin=None, vmax=None, clip=False):
-        Normalize.__init__(self,vmin, vmax, clip)
+        Normalize.__init__(self, vmin, vmax, clip)
         self.Nsigma = Nsigma
 
     def __call__(self, value, clip=None):
@@ -416,12 +455,12 @@ class SymStdNorm(Normalize):
         result, is_scalar = self.process_value(value)
 
         mean = np.mean(result)
-        std  = np.std(result)
+        std = np.std(result)
         self.vmax = mean + self.Nsigma * std
         self.vmin = mean - self.Nsigma * std
 
         if self.vmin == self.vmax:
-            result.fill(0) # Or should it be all masked? Or 0.5?
+            result.fill(0)  # Or should it be all masked? Or 0.5?
 
         else:
             result -= mean
@@ -445,19 +484,19 @@ class SymStdNorm(Normalize):
         if mpl.cbook.iterable(value):
             val = np.ma.asarray(value)
             val = 2 * (val-0.5)
-            val[val>0]  *= abs(vmax - midpoint)
-            val[val<0] *= abs(vmin - midpoint)
+            val[val > 0] *= abs(vmax - midpoint)
+            val[val < 0] *= abs(vmin - midpoint)
             val += midpoint
             return val
         else:
             val = 2 * (val - 0.5)
             if val < 0:
-                return  val*abs(vmin-midpoint) + midpoint
+                return val*abs(vmin-midpoint) + midpoint
             else:
-                return  val*abs(vmax-midpoint) + midpoint
+                return val*abs(vmax-midpoint) + midpoint
 #
 
-from matplotlib.ticker import Locator
+
 class MinorSymLogLocator(Locator):
     """
     From https://stackoverflow.com/questions/20470892/how-to-place-minor-ticks-on-symlog-scale
@@ -467,6 +506,7 @@ class MinorSymLogLocator(Locator):
 
     Usage example: ax.yaxis.set_minor_locator(MinorSymLogLocator(1e-1))
     """
+
     def __init__(self, linthresh):
         """
         Ticks will be placed between the major ticks.
@@ -500,9 +540,6 @@ class MinorSymLogLocator(Locator):
                                   '%s type.' % type(self))
 #
 
-import matplotlib.scale as mscale
-import matplotlib.transforms as mtransforms
-import matplotlib.ticker as ticker
 
 class SquareRootScale(mscale.ScaleBase):
     """
@@ -524,7 +561,7 @@ class SquareRootScale(mscale.ScaleBase):
         axis.set_minor_formatter(ticker.NullFormatter())
 
     def limit_range_for_scale(self, vmin, vmax, minpos):
-        return  max(0., vmin), vmax
+        return max(0., vmin), vmax
 
     class SquareRootTransform(mtransforms.Transform):
         input_dims = 1
@@ -551,8 +588,10 @@ class SquareRootScale(mscale.ScaleBase):
     def get_transform(self):
         return self.SquareRootTransform()
 
+
 mscale.register_scale(SquareRootScale)
 #
+
 
 class Radar(object):
     """
@@ -578,6 +617,7 @@ class Radar(object):
     radar.ax.legend()
 
     """
+
     def __init__(self, fig, titles, labels, rect=None):
         if rect is None:
             rect = [0.05, 0.05, 0.95, 0.95]
@@ -585,7 +625,7 @@ class Radar(object):
         self.n = len(titles)
         self.angles = np.arange(90, 90+360, 360.0/self.n)
         self.axes = [fig.add_axes(rect, projection="polar", label="axes%d" % i)
-                         for i in range(self.n)]
+                     for i in range(self.n)]
 
         self.ax = self.axes[0]
         self.ax.set_thetagrids(self.angles, labels=titles, fontsize=14)
@@ -596,7 +636,7 @@ class Radar(object):
             ax.xaxis.set_visible(False)
 
         for ax, angle, label in zip(self.axes, self.angles, labels):
-            ax.set_rgrids(np.arange(0.2,1.1,0.2), angle=angle, labels=label)
+            ax.set_rgrids(np.arange(0.2, 1.1, 0.2), angle=angle, labels=label)
             ax.spines["polar"].set_visible(False)
             ax.set_ylim(0, 1)
 
