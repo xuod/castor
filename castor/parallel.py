@@ -69,7 +69,11 @@ from tqdm.auto import tqdm, trange
 #     return v_old, v_new, res.get(timeout)
 #
 
-def map_(func, iter, ordered=True):
+def _map_f(args):
+    f, i = args
+    return f(i)
+
+def map(func, iter, ordered=True):
     """
     Maps the function `func` over the iterator `iter` in a multi-threaded way
     using the multiprocessing package with a tqdm progress bar.
@@ -91,7 +95,7 @@ def map_(func, iter, ordered=True):
 
     pool = multiprocessing.Pool()
 
-    inputs = ((func,i,v) for i in iter) #use a generator, so that nothing is computed before it's needed :)
+    inputs = ((func,i) for i in iter) #use a generator, so that nothing is computed before it's needed :)
 
     try :
         n = len(iter)
@@ -107,8 +111,11 @@ def map_(func, iter, ordered=True):
 
     with tqdm(total=n, desc='# castor.parallel.map') as pbar:
         for res in pool_map(_map_f, inputs):
-            pbar.update()
-            res_list.append(res)
+            try :
+                pbar.update()
+                res_list.append(res)
+            except KeyboardInterrupt:
+                pool.terminate()
 
     pool.close()
     pool.join()
