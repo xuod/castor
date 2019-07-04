@@ -1,4 +1,5 @@
 from astropy.io import fits
+import numpy as np
 
 def fitsdata(filename, hdu_number=1):
     """
@@ -127,6 +128,149 @@ def print_h5py_tree(f):
                 yield from h5py_dataset_iterator(item, path)
     for (path, dset) in h5py_dataset_iterator(f):
         print(path, dset)
+
+
+def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True):
+    """
+    Loading a cosmosis chain
+
+    Parameters
+    ----------
+    filename : 
+    params_lambda : function that takes cosmosis parameter's name and returns True/False whether it should be used.
+    verbose :
+    """
+    from collections import OrderedDict
+
+    def get_nsample(filename):
+        with open(filename,"r") as fi:
+            for ln in fi:
+                if ln.startswith("#nsample="):
+                    nsamples = int(ln[9:])
+                    break
+        return nsamples
+
+    
+    with open(filename, 'r') as file:
+        # Read all parameters names
+        s = file.readline()
+        s_a = s[1:].split()
+
+        # Read sampler        
+        s = file.readline()
+        # print(s)
+        if s == '#sampler=multinest\n':
+            print("Loading Multinest chain at")
+            print(filename)
+            list_s = file.read().splitlines()
+            nsample = int(list_s[-3].replace('#nsample=',''))
+
+        elif s == '#sampler=emcee\n':
+            print("Loading emcee chain at")
+            print(filename)
+            nsample = 0
+        elif s == '#sampler=list\n':
+            print("Loading list chain at")
+            print(filename)
+            nsample = 0
+        else:
+            raise NotImplementedError
+
+    
+    # Load the chain
+    chain = np.loadtxt(filename)    
+
+    dico = OrderedDict()
+    keys = []
+    for i, s in enumerate(s_a):
+        if params_lambda(s):
+            keys.append(s)
+            dico[s] = chain[-nsample:,i]
+            
+    if 'weight' in s_a:
+        weights = chain[-nsample:,i]
+    else:
+        weights = np.ones_like(dico[keys[0]])
+    
+    if verbose:
+        print("- using params")
+        print(keys)
+        print("- using nsample = ", len(weights))
+        
+    return dico, weights
+
+def cosmosis_labels(plotter='getdist'):
+    if plotter=='chainconsumer':
+        labels = {}
+        labels['cosmological_parameters--omega_m'] = '$\\Omega_{\\rm m}$' #'^{\\rm geo}$'
+        labels['cosmological_parameters_growth--omega_m_growth'] = '$\\Omega_{\\rm m}^{\\rm growth}$'
+        labels['cosmological_parameters--omega_b'] = '$\\Omega_{\\rm b}$'
+        labels['cosmological_parameters--omega_c'] = '$\\Omega_{\\rm c}$'
+        labels['cosmological_parameters--omnuh2'] = '$\\Omega_{\\nu} h^2$'
+        labels['cosmological_parameters--h0'] = '$h$' #'$H_0$'
+        labels['cosmological_parameters--n_s'] = '$n_{\\rm s}$'
+        labels['cosmological_parameters--a_s'] = '$A_{\\rm s}$'
+        labels['cosmological_parameters--tau'] = '$\\tau$' #'$H_0$'
+        labels['cosmological_parameters--w'] = '$w$' #'$H_0$'
+
+        labels['intrinsic_alignment_parameters--a'] = '$A{\\rm IA}$'
+        labels['intrinsic_alignment_parameters--alpha'] = '$\\alpha_{\\rm IA}$'
+
+        labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = '$\\sigma_8$'
+        labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
+        labels['like'] = '$\\mathcal{L}$'
+        labels['prior'] = '$\\log p_{\\rm prior}$'
+        labels['post'] = '$\\log p_{\\rm post}$'
+        labels['weight'] = '$\\log p_{\\rm post}$'
+        
+        for i in range(0, 10):
+            labels['bin_bias--b{}'.format(i)] = '$b_{}$'.format(i)
+            labels['shear_calibration_parameters--m{}'.format(i)] = '$m_{}$'.format(i)
+            labels['wl_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^s_{}$'.format(i)
+            labels['lens_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^l_{}$'.format(i)
+            labels['rescale_Pk_fz--alpha_{}'.format(i)] = '$\\alpha^{{\\sigma_8(z)}}_{}$'.format(i)
+        
+        labels['planck--a_planck'] = '$A_{\\rm Planck}$'
+
+        
+        return labels
+        
+    if plotter=='getdist':
+        labels = {}
+        labels['cosmological_parameters--omega_m'] = r'\Omega_{\rm m}' #'^{\\rm geo}$'
+        labels['cosmological_parameters_growth--omega_m_growth'] = r'\Omega_{\rm m}^{\rm growth}'
+        labels['cosmological_parameters--omega_b'] = r'\Omega_{\rm b}'
+        labels['cosmological_parameters--omega_c'] = r'\Omega_{\rm c}'
+        labels['cosmological_parameters--omnuh2'] = r'\Omega_{\nu} h^2'
+        labels['cosmological_parameters--h0'] = r'h' #'$H_0$'
+        labels['cosmological_parameters--n_s'] = r'n_{\rm s}'
+        labels['cosmological_parameters--a_s'] = r'A_{\rm s}'
+        labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
+        labels['cosmological_parameters--w'] = r'w' #'$H_0$'
+
+        labels['intrinsic_alignment_parameters--a'] = 'A{\rm IA}'
+        labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
+
+        labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+        labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
+        labels['like'] = '$\\mathcal{L}$'
+        labels['prior'] = '$\\log p_{\\rm prior}$'
+        labels['post'] = '$\\log p_{\\rm post}$'
+        labels['weight'] = '$\\log p_{\\rm post}$'
+
+
+        for i in range(0, 10):
+            labels['bin_bias--b{}'.format(i)] = 'b_{}'.format(i)
+            labels['shear_calibration_parameters--m{}'.format(i)] = 'm_{}'.format(i)
+            labels['wl_photoz_errors--bias_{}'.format(i)] = '\Delta z^s_{}'.format(i)
+            labels['lens_photoz_errors--bias_{}'.format(i)] = '\Delta z^l_{}'.format(i)
+            labels['rescale_Pk_fz--alpha_{}'.format(i)] = '\alpha^{{\sigma_8(z)}}_{}'.format(i)
+
+        labels['planck--a_planck'] = r'A_{\rm Planck}'
+
+        return labels
+    
+
 
 ##############################
 # Use the tqdm package instead

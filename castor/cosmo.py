@@ -25,10 +25,10 @@ def thetaphi2radec(theta,phi):
 #
 
 
-def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSEEN=False, return_extra=False):
+def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSEEN=False, return_extra=False, mode='mean'):
     """
     Creates healpix maps of quantity observed at ra, dec (in degrees) by taking
-    the average of quantity in each pixel.
+    the mean or sum of quantity in each pixel.
 
     Parameters
     ----------
@@ -53,6 +53,8 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
         If True, a dictionnary is returned that contains count statistics and
         the masked `ipix` array to allow for statistics on the quantities to be
         computed.
+    mode : string
+        Whether to return the 'mean' or 'sum' of quantity in each pixel.
 
     Returns
     -------
@@ -64,9 +66,9 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
         quantity = np.atleast_2d(quantity)
 
         if weight is not None:
+            weight = np.atleast_2d(weight)
             assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
             assert np.all(weight > 0.), "[make_healpix_map] weight is not strictly positive"
-            weight = np.atleast_2d(weight)
         else:
             weight = np.ones_like(quantity)
 
@@ -81,6 +83,9 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
     # Value to fill outside the mask
     x = hp.UNSEEN if fill_UNSEEN else 0.0
+
+    # Make sure mode is correct
+    assert (mode in ['sum','mean']), "[make_healpix_map] mode should be 'mean' or 'sum'"
 
     count = np.zeros(npix, dtype=float)
     outmaps = []
@@ -110,7 +115,10 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
             outmap = np.zeros(npix, dtype=float)
             np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
-            outmap[bool_mask] /= sum_w[bool_mask]
+
+            if mode=='mean':
+                outmap[bool_mask] /= sum_w[bool_mask]
+                
             outmap[np.logical_not(bool_mask)] = x
 
             outmaps.append(outmap)
@@ -538,3 +546,5 @@ def power_spectrum_1D_NFFT(xv, fxv):
 
     k, fk = doNFFT(xv, fxv)
     return k, (fk.real**2 + fk.imag**2)/(xv[-1]-xv[0])
+
+
