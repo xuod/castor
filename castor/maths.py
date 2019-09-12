@@ -189,6 +189,44 @@ def matrix_frowfcol(mat, frow, fcol, output=True):
 #
 
 
+def interp_loglog(x, xp, fp, logx=True, logy=True, **kwargs):
+    """
+    Performs linear interpolation where x and/or y are log-scaled.
+    
+    Parameters
+    ----------
+    x : array_like
+        The x-coordinates at which to evaluate the interpolated values.
+    xp : 1-D sequence of floats
+        The x-coordinates of the data points, must be increasing if argument period is not specified. Otherwise, xp is internally sorted after normalizing the periodic boundaries with xp = xp % period.
+    fp : 1-D sequence of float or complex
+        The y-coordinates of the data points, same length as xp.
+    logx : bool, optional
+        Wheather to log-scale x, by default True
+    logy : bool, optional
+        Wheather to log-scale y, by default True
+    
+    Returns
+    -------
+    y : float or complex (corresponding to fp) or ndarray
+        The interpolated values, same shape as x.
+    """
+    if logx:
+        funcx = np.log
+    else:
+        funcx = lambda x: x
+
+    if logy:
+        funcy_in = np.log
+        funcy_out = np.exp
+    else:
+        funcy_in = lambda x: x
+        funcy_out = lambda x: x
+        
+    return funcy_out(np.interp(funcx(x), funcx(xp), funcy_in(fp)))
+
+
+
 def calc_chi2(x, cov, xmean=None):
     """
     Computes chi2 = (x-xmean)^T . cov^-1 . (x-xmean)
@@ -394,12 +432,13 @@ def chi2tosigma(chi2, ndof):
 #
 
 
-def logspace(xmin, xmax, n):
-    """
-    Returns a log-spaced array between xmin and xmax.
+# This is covered by np.geomspace !
+# def logspace(xmin, xmax, n):
+#     """
+#     Returns a log-spaced array between xmin and xmax.
 
-    """
-    return np.logspace(np.log10(xmin), np.log10(xmax), n)
+#     """
+#     return np.logspace(np.log10(xmin), np.log10(xmax), n)
 #
 
 def no_outliers(points_plop, thresh=3.5, return_masked=True,):
@@ -441,3 +480,39 @@ def no_outliers(points_plop, thresh=3.5, return_masked=True,):
         return np.ma.masked_array(data=points, mask=modified_z_score > thresh)
     else:
         return modified_z_score > thresh
+#
+
+def hotelling_T2(X, mu0=0.):
+    """
+    Computes Hotelling's T^2 statistic to test the mean of a multivariate gaussian vector.
+    T^2 is distributed as a rescaled F-distribution under the null hypothesis that the mean
+    is mu0.
+
+    Parameters
+    ----------
+    X : array
+        Size should be (number of samples, number of dimension)
+    mu0 : bool or array, optional
+        The mean of the vector under the null hypothesis. If a scalar, it is assumed the mean
+        vector is constant on all dimensions, by default 0.
+
+    Returns
+    -------
+        T2 statistic and probability to exceed under the null hypothesis.
+    
+    References:
+    ----------
+        https://faculty.chicagobooth.edu/ruey.tsay/teaching/ama/sp2010/lec2-10.pdf
+    """ 
+    n, p = X.shape
+    Xbar = np.mean(X, axis=0)
+    S = np.dot((X-Xbar).T, X - mu0) / (n - 1.)
+    T2 = np.dot(Xbar-mu0, np.dot(np.linalg.inv(S/n), Xbar-mu0))
+
+    fdist = scipy.stats.f(p, n-p, scale=(n-1.)*p/(n-p))
+    pval = fdist.sf(T2)
+
+    return T2, pval
+
+
+

@@ -102,10 +102,10 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     else:
         bool_mask = mask.astype(bool)
 
-    # Masking the count in the masked area
-    count[np.logical_not(bool_mask)] = x
-    if mask is None:
-        assert np.all(count[bool_mask] > 0), "[make_healpix_map] count[bool_mask] is not positive on the provided mask !"
+    # # Masking the count in the masked area
+    # count[np.logical_not(bool_mask)] = x
+    # if mask is None:
+    #     assert np.all(count[bool_mask] > 0), "[make_healpix_map] count[bool_mask] is not positive on the provided mask !"
 
     # Create the maps
     if quantity is not None:
@@ -252,6 +252,21 @@ def maskmap(hpmap, binarymask, fill_UNSEEN=False):
 
 
 def random_point_2dsphre(N, return_radec=True):
+    """
+    Generates N random points uniformly distributed on the sphere.
+
+    Parameters
+    ----------
+    N : int
+        Number of points
+    return_radec : bool, optional
+        If True, returns ra/dec in degrees, else theta/phi in radians, by default True
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
     u, v = np.random.rand(2,int(N))
     phi = 2. * np.pi * u
     theta = np.arccos(2*v - 1.)
@@ -261,6 +276,38 @@ def random_point_2dsphre(N, return_radec=True):
         return ra, dec
     else:
         return theta, phi
+#
+
+
+def make_mask_radec_cuts(nside, ramin, ramax, decmin, decmax):
+    """
+    Generates a square mask limited by RA/DEC.
+
+    Parameters
+    ----------
+    nside : int
+        `nside` parameter for healpix.
+    ramin, ramax : float
+        Should be in degrees in [0., 360.]
+    decmin, decmax: [type]
+        Should be in degrees in [-90., +90.]
+
+    Returns
+    -------
+    array
+        Returns the square mask.
+    """
+    # Make sure arguments are correct
+    assert (0.<=ramin<=360.) & (0.<=ramax<=360.) & (ramin < ramax)
+    assert (-90.<=decmin<=90.) & (-90.<=decmax<=90.) & (decmin < decmax)
+
+    mask = np.zeros(hp.nside2npix(nside))
+    th, ph = hp.pix2ang(nside, np.arange(hp.nside2npix(nside)))
+    ths, phs = radec2thetaphi([ramin, ramax], [decmin, decmax])
+    thmin, thmax = min(ths), max(ths)
+    phmin, phmax = min(phs), max(phs)
+    mask[np.where((th < thmax) & (th > thmin) & (ph > phmin) & (ph < phmax))[0]] = 1.
+    return mask
 #
 
 
