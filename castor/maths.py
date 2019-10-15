@@ -224,7 +224,17 @@ def interp_loglog(x, xp, fp, logx=True, logy=True, **kwargs):
         funcy_out = lambda x: x
         
     return funcy_out(np.interp(funcx(x), funcx(xp), funcy_in(fp)))
+#
 
+
+def powspace(start, stop, num, power):
+    """
+    Like linspace or geomspace but with a power law scaling.
+    """
+    start = np.power(start, float(power))
+    stop = np.power(stop, float(power))
+    return np.power(np.linspace(start, stop, num=num), 1./power)
+#
 
 
 def calc_chi2(x, cov, xmean=None):

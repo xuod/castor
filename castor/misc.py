@@ -164,13 +164,16 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
             print(filename)
             list_s = file.read().splitlines()
             nsample = int(list_s[-3].replace('#nsample=',''))
-
         elif s == '#sampler=emcee\n':
             print("Loading emcee chain at")
             print(filename)
             nsample = 0
         elif s == '#sampler=list\n':
             print("Loading list chain at")
+            print(filename)
+            nsample = 0
+        elif s == "#sampler=maxlike\n":
+            print("Loading maxlike chain at")
             print(filename)
             nsample = 0
         else:
