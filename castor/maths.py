@@ -223,7 +223,7 @@ def interp_loglog(x, xp, fp, logx=True, logy=True, **kwargs):
         funcy_in = lambda x: x
         funcy_out = lambda x: x
         
-    return funcy_out(np.interp(funcx(x), funcx(xp), funcy_in(fp)))
+    return funcy_out(np.interp(funcx(x), funcx(xp), funcy_in(fp), **kwargs))
 #
 
 

@@ -181,7 +181,7 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
 
     
     # Load the chain
-    chain = np.loadtxt(filename)    
+    chain = np.atleast_2d(np.loadtxt(filename))   
 
     dico = OrderedDict()
     keys = []
