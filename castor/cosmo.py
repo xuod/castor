@@ -25,7 +25,7 @@ def thetaphi2radec(theta,phi):
 #
 
 
-def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSEEN=False, return_extra=False, mode='mean'):
+def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None, fill_UNSEEN=False, return_extra=False, mode='mean'):
     """
     Creates healpix maps of quantity observed at ra, dec (in degrees) by taking
     the mean or sum of quantity in each pixel.
@@ -46,6 +46,10 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     weight : type
         Weights of objects (the default is None, in which case all objects have
         weight 1). Must be the same size as `quantity`.
+    ipix : array
+        `ipix` should be the array of healpix pixel indices corresponding to the
+        input `ra` and `dec`. By default it is None and will be computed.
+
     fill_UNSEEN : boolean
         If `fill_UNSEEN` is True, pixels outside the mask are filled with
         hp.UNSEEN, 0 otherwise (the default is False).
@@ -74,8 +78,6 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
 
         assert quantity.shape[1] == weight.shape[1], "[make_healpix_map] quantity/weight arrays don't have the same length"
 
-        assert len(ra) == len(dec), "[make_healpix_map] ra/dec arrays don't have the same length"
-
     npix = hp.nside2npix(nside)
 
     if mask is not None:
@@ -91,7 +93,14 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, fill_UNSE
     outmaps = []
 
     # Getting pixels for each object
-    ipix = hp.ang2pix(nside, (90.0-dec)/180.0*np.pi, ra/180.0*np.pi)
+    if ipix is None:
+        assert len(ra) == len(dec), "[make_healpix_map] ra/dec arrays don't have the same length"
+        if quantity is not None:
+            assert len(ra) == quantity.shape[1]
+        ipix = hp.ang2pix(nside, (90.0-dec)/180.0*np.pi, ra/180.0*np.pi)
+    else:
+        if quantity is not None:
+            assert len(ipix) == quantity.shape[1], "[make_healpix_map] ipix has wrong size"
 
     # Counting objects in pixels
     np.add.at(count, ipix, 1.)
@@ -186,9 +195,15 @@ def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
 #
 
 
-def count2density(count, mask=None, completeness=None):
+def count2density(count, mask=None, completeness=None, true_density=True):
     """
     Creates a reconstructed density map from count-in-pixel map count, with completeness and mask support.
+
+    Under the assumption that count[i] = Poisson(completeness[i] * nbar * (1+density[i])), the MLE is:
+        density[i]=(count[i])/(completeness[i]*nbar)-1.
+    nbar is unknown and the MLE is degenerate, therefore an additional hypothesis is needed.
+    - case 1: mean(density[i])=0, where the mean over all pixels, even unobserved.
+    - case 2: mean(density[i]*completeness[i])=0, idem.
 
     Parameters
     ----------
@@ -198,6 +213,8 @@ def count2density(count, mask=None, completeness=None):
         Binary mask of the sky (the default is None).
     completeness : array (optional)
         Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
+    true_density : boool (optional)
+        If True (default), uses case 1, ie density=0 when averaged over the full sky, otherwise uses case 2 where density*completeness average to zero.
 
     Returns
     -------
@@ -215,9 +232,15 @@ def count2density(count, mask=None, completeness=None):
 
     msk = mask.astype(bool)
 
+    assert np.all(completeness[msk] > 0.) , "[count2density] completeness has pixels = 0 in mask"
+    assert np.all(completeness[msk] <= 1.) , "[count2density] completeness has pixels > 1 in mask"
+
     # Local mean density to compare count with.
     avg_in_pixel = np.zeros(npix, dtype=float)
-    avg_in_pixel[msk] = completeness[msk] * np.sum(count[msk]) / np.sum(completeness[msk])
+    if true_density:
+        avg_in_pixel[msk] = completeness[msk] * np.mean(count[msk] / completeness[msk])
+    else:
+        avg_in_pixel[msk] = completeness[msk] * np.sum(count[msk]) / np.sum(completeness[msk])
 
     # Density
     density = np.zeros(npix, dtype=float)
