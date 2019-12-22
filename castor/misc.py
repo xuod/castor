@@ -176,12 +176,25 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
             print("Loading maxlike chain at")
             print(filename)
             nsample = 0
+        elif s == "#sampler=metropolis\n":
+            print("Loading metropolis chain at")
+            print(filename)
+            nsample = 0
+        elif s == "#sampler=importance\n":
+            print("Loading importance chain at")
+            print(filename)
+            nsample = 0
+        elif s == "#sampler=pmc\n":
+            print("Loading pmc chain at")
+            print(filename)
+            list_s = file.read().splitlines()
+            nsample = int(list_s[-1].replace('#nsample=',''))
         else:
             raise NotImplementedError
 
     
     # Load the chain
-    chain = np.loadtxt(filename)    
+    chain = np.atleast_2d(np.loadtxt(filename))   
 
     dico = OrderedDict()
     keys = []
@@ -255,11 +268,11 @@ def cosmosis_labels(plotter='getdist'):
         labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
 
         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
-        labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
-        labels['like'] = '$\\mathcal{L}$'
-        labels['prior'] = '$\\log p_{\\rm prior}$'
-        labels['post'] = '$\\log p_{\\rm post}$'
-        labels['weight'] = '$\\log p_{\\rm post}$'
+        labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
+        labels['like'] = r'\mathcal{L}'
+        labels['prior'] = r'\log p_{\rm prior}'
+        labels['post'] = r'\log p_{\rm post}'
+        labels['weight'] = r'\log p_{\rm post}'
 
 
         for i in range(0, 10):
