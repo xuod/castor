@@ -2,6 +2,7 @@ import healpy as hp
 import numpy as np
 import astropy.coordinates as coord
 import astropy.units as u
+from .maths import _add_at_cst, _add_at
 
 def radec2thetaphi(ra,dec):
     """
@@ -16,7 +17,7 @@ def radec2thetaphi(ra,dec):
 
 def thetaphi2radec(theta,phi):
     """
-    Converts heta and phi (Healpix conventions, in radians) to ra and dec (in degrees)
+    Converts theta and phi (Healpix conventions, in radians) to ra and dec (in degrees)
 
     """
     ra = np.rad2deg(phi)
@@ -103,7 +104,8 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
             assert len(ipix) == quantity.shape[1], "[make_healpix_map] ipix has wrong size"
 
     # Counting objects in pixels
-    np.add.at(count, ipix, 1.)
+    # np.add.at(count, ipix, 1.)
+    _add_at_cst(count, ipix, 1.)
 
     # Creating the mask if it does not exist
     if mask is None:
@@ -120,10 +122,12 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
     if quantity is not None:
         for i in range(quantity.shape[0]):
             sum_w = np.zeros(npix, dtype=float)
-            np.add.at(sum_w, ipix, weight[i,:])
+            # np.add.at(sum_w, ipix, weight[i,:])
+            _add_at(sum_w, ipix, weight[i,:])
 
             outmap = np.zeros(npix, dtype=float)
-            np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
+            # np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
+            _add_at(outmap, ipix, quantity[i,:]*weight[i,:])
 
             if mode=='mean':
                 outmap[bool_mask] /= sum_w[bool_mask]
@@ -476,7 +480,7 @@ def ply2hp(ply, nside, fk52gal=False):
 
     arglist = [(ply,ral[i],decl[i]) for i in range(100)]
 
-    ids = np.concatenate(parallel.map(_ply2hp_aux, arglist, timesleep=1.0))
+    ids = np.concatenate(parallel.map(_ply2hp_aux, arglist)) #timesleep=1.0)
 
     pos = np.where(ids > -1)
 

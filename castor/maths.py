@@ -134,7 +134,7 @@ def chunk(seq, m):
     out = []
     last = 0
 
-    for i in range(m):
+    for _ in range(m):
         if r > 0:
             length = p + 1
         else:
@@ -524,5 +524,21 @@ def hotelling_T2(X, mu0=0.):
 
     return T2, pval
 
+try:
+    import numba
+    @numba.jit(nopython=True, parallel=True)
+    def _add_at_cst(a,index,b):
+        n = len(index)
+        for i in numba.prange(n):
+            a[index[i]] += b
 
+    @numba.jit(nopython=True, parallel=True)
+    def _add_at(a,index,b):
+        n = len(b)
+        for i in numba.prange(n):
+            a[index[i]] += b[i]
 
+except ImportError:
+    def _add_at(a,index,b):
+        np.add.at(a,index,b)    
+    _add_at_cst = _add_at

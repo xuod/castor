@@ -75,7 +75,7 @@ def create_fits(fitsname, var, header=None):
 
         tbhdu=fits.TableHDU.from_columns(cols, header=header)
 
-    if type(var) is numpy.recarray:
+    if type(var) is np.recarray:
         tbhdu=fits.TableHDU.from_columns(var, header=header)
 
     tbhdu.writeto(fitsname, clobber=True)
@@ -229,7 +229,7 @@ def cosmosis_labels(plotter='getdist'):
         labels['cosmological_parameters--tau'] = '$\\tau$' #'$H_0$'
         labels['cosmological_parameters--w'] = '$w$' #'$H_0$'
 
-        labels['intrinsic_alignment_parameters--a'] = '$A{\\rm IA}$'
+        labels['intrinsic_alignment_parameters--a'] = '$A_{\\rm IA}$'
         labels['intrinsic_alignment_parameters--alpha'] = '$\\alpha_{\\rm IA}$'
 
         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = '$\\sigma_8$'
@@ -264,7 +264,7 @@ def cosmosis_labels(plotter='getdist'):
         labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
         labels['cosmological_parameters--w'] = r'w' #'$H_0$'
 
-        labels['intrinsic_alignment_parameters--a'] = 'A{\rm IA}'
+        labels['intrinsic_alignment_parameters--a'] = 'A_{\rm IA}'
         labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
 
         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
