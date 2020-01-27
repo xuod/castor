@@ -2,6 +2,7 @@ import healpy as hp
 import numpy as np
 import astropy.coordinates as coord
 import astropy.units as u
+from astropy.io import fits
 from .maths import _add_at_cst, _add_at
 
 def radec2thetaphi(ra,dec):
@@ -182,7 +183,7 @@ def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
     if completeness is None:
         completeness = mask.astype(float)
 
-    if np.any(densitymap[mask] < - 1.):
+    if np.any(densitymap[mask.astype(bool)] < - 1.):
         print("[density2count] The density map has pixels below -1, will be clipped.")
 
     if pixel :
@@ -241,14 +242,17 @@ def count2density(count, mask=None, completeness=None, true_density=True):
 
     # Local mean density to compare count with.
     avg_in_pixel = np.zeros(npix, dtype=float)
+
+    cnt = count[msk].astype(float)
+    comp = completeness[msk].astype(float)
     if true_density:
-        avg_in_pixel[msk] = completeness[msk] * np.mean(count[msk] / completeness[msk])
+        avg_in_pixel[msk] = comp * np.mean(cnt / comp)
     else:
-        avg_in_pixel[msk] = completeness[msk] * np.sum(count[msk]) / np.sum(completeness[msk])
+        avg_in_pixel[msk] = comp * np.sum(cnt) / np.sum(comp)
 
     # Density
     density = np.zeros(npix, dtype=float)
-    density[msk] = count[msk] / avg_in_pixel[msk] - 1.
+    density[msk] = cnt / avg_in_pixel[msk] - 1.
 
     return density
 #
@@ -276,6 +280,28 @@ def maskmap(hpmap, binarymask, fill_UNSEEN=False):
 
     hpmap[np.logical_not(binarymask.astype(bool))] = x
 #
+
+def read_map_fits(filename, col, ext=1, nside_in=None, nside_out=None, ipix='HPIX', fill_UNSEEN=False):
+    a = fits.open(filename)
+    try:
+        nside = int(a[ext].header['NSIDE'])
+        if nside_in is not None:
+            assert nside_in == nside
+    except KeyError:
+        assert nside_in is not None
+        nside = nside_in
+    npix = hp.nside2npix(nside)
+    if fill_UNSEEN:
+        b = np.ones(npix) * hp.UNSEEN
+    else:
+        b = np.zeros(npix)
+
+    b[a[ext].data[ipix]] = a[ext].data[col]
+    
+    if nside_out is not None:
+        return hp.ud_grade(a, nside_out)
+    else:
+        return b
 
 
 def random_point_2dsphre(N, return_radec=True):
