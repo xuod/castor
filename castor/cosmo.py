@@ -27,7 +27,7 @@ def thetaphi2radec(theta,phi):
 #
 
 
-def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None, fill_UNSEEN=False, return_extra=False, mode='mean'):
+def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None, fill_UNSEEN=False, return_w_maps=False, return_extra=False, mode='mean'):
     """
     Creates healpix maps of quantity observed at ra, dec (in degrees) by taking
     the mean or sum of quantity in each pixel.
@@ -72,13 +72,19 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
         quantity = np.atleast_2d(quantity)
 
         if weight is not None:
-            weight = np.atleast_2d(weight)
-            assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
-            assert np.all(weight > 0.), "[make_healpix_map] weight is not strictly positive"
-        else:
-            weight = np.ones_like(quantity)
+            w = np.atleast_2d(weight)
+            # Weights can also be the same for all quantities
+            # assert quantity.shape==weight.shape, "[make_healpix_map] quantity and weight must have the same shape"
+            if w.shape[0] > 1:
+                assert quantity.shape == w.shape, "[make_healpix_map] quantity/weight arrays don't have the same length"
+            else:
+                w = np.tile(w[0], (quantity.shape[0],1))
 
-        assert quantity.shape[1] == weight.shape[1], "[make_healpix_map] quantity/weight arrays don't have the same length"
+            assert np.all(w > 0.), "[make_healpix_map] weight is not strictly positive"
+        else:
+            w = np.ones_like(quantity)
+
+        assert quantity.shape == w.shape, "[make_healpix_map] quantity/weight arrays don't have the same length"
 
     npix = hp.nside2npix(nside)
 
@@ -93,6 +99,7 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
 
     count = np.zeros(npix, dtype=float)
     outmaps = []
+    sum_w_maps = []
 
     # Getting pixels for each object
     if ipix is None:
@@ -123,12 +130,12 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
     if quantity is not None:
         for i in range(quantity.shape[0]):
             sum_w = np.zeros(npix, dtype=float)
-            # np.add.at(sum_w, ipix, weight[i,:])
-            _add_at(sum_w, ipix, weight[i,:])
+            # np.add.at(sum_w, ipix, w[i,:])
+            _add_at(sum_w, ipix, w[i,:])
 
             outmap = np.zeros(npix, dtype=float)
-            # np.add.at(outmap, ipix, quantity[i,:]*weight[i,:])
-            _add_at(outmap, ipix, quantity[i,:]*weight[i,:])
+            # np.add.at(outmap, ipix, quantity[i,:]*w[i,:])
+            _add_at(outmap, ipix, quantity[i,:]*w[i,:])
 
             if mode=='mean':
                 outmap[bool_mask] /= sum_w[bool_mask]
@@ -136,11 +143,18 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
             outmap[np.logical_not(bool_mask)] = x
 
             outmaps.append(outmap)
+            if return_w_maps:
+                sum_w_maps.append(sum_w)
 
     if mask is None:
         returned_mask = bool_mask.astype(float)
     else:
         returned_mask = mask
+
+    res = [outmaps, count, returned_mask]
+
+    if return_w_maps:
+        res += [sum_w_maps]
 
     if return_extra:
         extra = {}
@@ -151,9 +165,9 @@ def make_healpix_map(ra, dec, quantity, nside, mask=None, weight=None, ipix=None
         extra['count_per_sqarcmin_in_mask'] = extra['count_per_sqdegree_in_mask'] / 60.**2
         extra['ipix_masked'] = np.ma.array(ipix, mask=bool_mask[ipix])
 
-        return outmaps, count, returned_mask, extra
-    else:
-        return outmaps, count, returned_mask
+        res += [extra]
+
+    return res
 #
 
 
@@ -200,15 +214,16 @@ def density2count(densitymap, nbar, mask=None, completeness=None, pixel=True):
 #
 
 
-def count2density(count, mask=None, completeness=None, true_density=True):
+def count2density(count, mask=None, completeness=None, density_convention=2):
     """
     Creates a reconstructed density map from count-in-pixel map count, with completeness and mask support.
 
     Under the assumption that count[i] = Poisson(completeness[i] * nbar * (1+density[i])), the MLE is:
         density[i]=(count[i])/(completeness[i]*nbar)-1.
-    nbar is unknown and the MLE is degenerate, therefore an additional hypothesis is needed.
-    - case 1: mean(density[i])=0, where the mean over all pixels, even unobserved.
-    - case 2: mean(density[i]*completeness[i])=0, idem.
+    The true density per pixel nbar is unknown and the MLE is degenerate between nbar and the density, therefore an additional hypothesis is needed. The true density field is unknown too so a hypothesis has to be made on the density estimator itself.
+    - case 1: mean(density[i])=0, where the mean over observed pixels.
+    - case 2: mean(density[i]*completeness[i])=0, where the mean is over all pixels, even unobserved.
+    Both cases are equivalent if the completeness is 1 within the mask. They amount to having the estimated density average to zero, without weights (case 1) or weighted by completeness (case 2).
 
     Parameters
     ----------
@@ -218,8 +233,8 @@ def count2density(count, mask=None, completeness=None, true_density=True):
         Binary mask of the sky (the default is None).
     completeness : array (optional)
         Healpix map of the fraction each pixel has been observed, also called completeness or masked map fraction (the default is None).
-    true_density : boool (optional)
-        If True (default), uses case 1, ie density=0 when averaged over the full sky, otherwise uses case 2 where density*completeness average to zero.
+    density_convention : int (optional)
+        If 2 (default), uses case 2 where density*completeness averages to zero over full sky, if 1 uses case 1 where density averages to zero over observed sky.
 
     Returns
     -------
@@ -227,6 +242,8 @@ def count2density(count, mask=None, completeness=None, true_density=True):
         Density map.
 
     """
+
+    assert density_convention in [1,2]
 
     npix = len(count)
 
@@ -245,7 +262,7 @@ def count2density(count, mask=None, completeness=None, true_density=True):
 
     cnt = count[msk].astype(float)
     comp = completeness[msk].astype(float)
-    if true_density:
+    if density_convention == 1:
         avg_in_pixel[msk] = comp * np.mean(cnt / comp)
     else:
         avg_in_pixel[msk] = comp * np.sum(cnt) / np.sum(comp)

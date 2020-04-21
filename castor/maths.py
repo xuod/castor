@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+from scipy import special
 
 def bindata(x, y, nbins, covmat=None, yerr=None, scale='linear'):
     """
@@ -370,6 +371,7 @@ def nearestPD(A, nit=10):
 
     """
     import numpy as np,numpy.linalg
+    from tqdm.auto import trange
 
     def _getAplus(A):
         eigval, eigvec = np.linalg.eig(A)
@@ -392,7 +394,7 @@ def nearestPD(A, nit=10):
     # the algorithm should work for any diagonal W
     deltaS = 0
     Yk = A.copy()
-    for k in range(nit):
+    for _ in trange(nit):
         Rk = Yk - deltaS
         Xk = _getPs(Rk, W=W)
         deltaS = Xk - Rk
@@ -435,7 +437,7 @@ def chi2tosigma(chi2, ndof):
 
     """
     pte0 = 1.- scipy.stats.chi2.cdf(chi2, ndof)
-    fsigmaToPTE = lambda sigma: scipy.special.erfc(sigma/np.sqrt(2.)) - pte0
+    fsigmaToPTE = lambda sigma: special.erfc(sigma/np.sqrt(2.)) - pte0
     sigma0 = scipy.optimize.brentq(fsigmaToPTE , 0., 50.)
 
     return pte0, sigma0

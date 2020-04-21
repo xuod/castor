@@ -28,9 +28,9 @@ def mat_symlog(my_matrix, vmin=None, vmax=None, logthresh=5):
     minlog = int(np.ceil(np.log10(-vmin)))
 
     # generate logarithmic ticks
-    tick_locations = ([-(10**x) for x in xrange(minlog, -logthresh-1, -1)]
+    tick_locations = ([-(10**x) for x in range(minlog, -logthresh-1, -1)]
                       + [0.0]
-                      + [(10**x) for x in xrange(-logthresh, maxlog+1)])
+                      + [(10**x) for x in range(-logthresh, maxlog+1)])
 
     cb = plt.colorbar(ticks=tick_locations, format='%.2e')
 
@@ -331,7 +331,7 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
         cdict['blue'].append((si, b, b))
         cdict['alpha'].append((si, a, a))
 
-    newcmap = matplotlib.colors.LinearSegmentedColormap(name, cdict)
+    newcmap = mpl.colors.LinearSegmentedColormap(name, cdict)
     plt.register_cmap(cmap=newcmap)
 
     return newcmap
@@ -552,7 +552,7 @@ class SquareRootScale(mscale.ScaleBase):
     name = 'squareroot'
 
     def __init__(self, axis, **kwargs):
-        mscale.ScaleBase.__init__(self)
+        mscale.ScaleBase.__init__(self, axis, **kwargs)
 
     def set_default_locators_and_formatters(self, axis):
         axis.set_major_locator(ticker.AutoLocator())

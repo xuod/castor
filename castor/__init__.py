@@ -6,7 +6,7 @@
 
 from . import parallel, misc, plot, maths, cosmo
 
-import numpy
+import numpy as np
 
 def call_item_by_item(func):
     """
@@ -19,14 +19,14 @@ def call_item_by_item(func):
     # From https://github.com/jakevdp/Thesis/blob/master/shear_KL/shear_KL_source/cosmology/cosmo_tools.py
     """
     def new_func(self,val,*args,**kwargs):
-        if type(val) in (int,long):
+        if type(val) in (int,np.long):
             val = float(val)
-        v_array = numpy.asarray(val)
+        v_array = np.asarray(val)
         v_raveled = v_array.ravel()
-        retval = numpy.array([func(self,v,*args,**kwargs) for v in v_raveled],
+        retval = np.array([func(self,v,*args,**kwargs) for v in v_raveled],
                              dtype = v_array.dtype)
         retval.resize(v_array.shape)
-        if type(val)==numpy.ndarray:
+        if type(val)==np.ndarray:
             return retval
         else:
             return type(val)(retval)
@@ -43,13 +43,13 @@ def call_as_array(func):
     From # https://github.com/jakevdp/Thesis/blob/master/shear_KL/shear_KL_source/cosmology/cosmo_tools.py
     """
     def new_func(self,val,*args,**kwargs):
-        if type(val) in (int,long):
+        if isinstance(val,int):
             val = float(val)
-        v_array = numpy.asarray(val)
+        v_array = np.asarray(val)
         v_raveled = v_array.ravel()
         retval = func(self,v_raveled,*args,**kwargs)
-        numpy.asarray(retval).resize(v_array.shape)
-        if type(val)==numpy.ndarray:
+        np.asarray(retval).resize(v_array.shape)
+        if type(val)==np.ndarray:
             return retval
         else:
             return type(val)(retval)

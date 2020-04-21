@@ -233,6 +233,7 @@ def cosmosis_labels(plotter='getdist'):
         labels['intrinsic_alignment_parameters--alpha'] = '$\\alpha_{\\rm IA}$'
 
         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = '$\\sigma_8$'
+        labels['COSMOLOGICAL_PARAMETERS--S_8'] = '$S_8$'
         labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
         labels['like'] = '$\\mathcal{L}$'
         labels['prior'] = '$\\log p_{\\rm prior}$'
@@ -268,6 +269,7 @@ def cosmosis_labels(plotter='getdist'):
         labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
 
         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+        labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
         labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
         labels['like'] = r'\mathcal{L}'
         labels['prior'] = r'\log p_{\rm prior}'
@@ -276,11 +278,11 @@ def cosmosis_labels(plotter='getdist'):
 
 
         for i in range(0, 10):
-            labels['bin_bias--b{}'.format(i)] = 'b_{}'.format(i)
-            labels['shear_calibration_parameters--m{}'.format(i)] = 'm_{}'.format(i)
-            labels['wl_photoz_errors--bias_{}'.format(i)] = '\Delta z^s_{}'.format(i)
-            labels['lens_photoz_errors--bias_{}'.format(i)] = '\Delta z^l_{}'.format(i)
-            labels['rescale_Pk_fz--alpha_{}'.format(i)] = '\alpha^{{\sigma_8(z)}}_{}'.format(i)
+            labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
+            labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{}'.format(i)
+            labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{}'.format(i)
+            labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{}'.format(i)
+            labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{}'.format(i)
 
         labels['planck--a_planck'] = r'A_{\rm Planck}'
 
