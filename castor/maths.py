@@ -500,6 +500,8 @@ def hotelling_T2(X, mu0=0.):
     T^2 is distributed as a rescaled F-distribution under the null hypothesis that the mean
     is mu0.
 
+    Note for me: this is not a generalization of a chi-squared test but of the Student-t test!
+
     Parameters
     ----------
     X : array

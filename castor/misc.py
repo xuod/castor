@@ -164,6 +164,11 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
             print(filename)
             list_s = file.read().splitlines()
             nsample = int(list_s[-3].replace('#nsample=',''))
+        elif s == "#sampler=polychord\n":
+            print("Loading Polychord chain at")
+            print(filename)
+            list_s = file.read().splitlines()
+            nsample = int(list_s[-3].replace('#nsample=',''))
         elif s == '#sampler=emcee\n':
             print("Loading emcee chain at")
             print(filename)
@@ -202,91 +207,136 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         if params_lambda(s):
             keys.append(s)
             dico[s] = chain[-nsample:,i]
-            
-    if 'weight' in s_a:
-        weights = chain[-nsample:,i]
-    else:
+        if s == 'weight':
+            weights = chain[-nsample:,i]
+    
+    if 'weight' not in s_a:
         weights = np.ones_like(dico[keys[0]])
     
     if verbose:
         print("- using params")
         print(keys)
-        print("- using nsample = ", len(weights))
+        print("- using nsample = ", nsample, len(weights))
         
     return dico, weights
 
+
 def cosmosis_labels(plotter='getdist'):
+    labels = {}
+    labels['cosmological_parameters--omega_m'] = r'\Omega_{\rm m}' #'^{\\rm geo}$'
+    labels['cosmological_parameters_growth--omega_m_growth'] = r'\Omega_{\rm m}^{\rm growth}'
+    labels['cosmological_parameters--omega_b'] = r'\Omega_{\rm b}'
+    labels['cosmological_parameters--omega_c'] = r'\Omega_{\rm c}'
+    labels['cosmological_parameters--omnuh2'] = r'\Omega_{\nu} h^2'
+    labels['cosmological_parameters--h0'] = r'h' #'$H_0$'
+    labels['cosmological_parameters--n_s'] = r'n_{\rm s}'
+    labels['cosmological_parameters--a_s'] = r'A_{\rm s}'
+    labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
+    labels['cosmological_parameters--w'] = r'w' #'$H_0$'
+    labels['cosmological_parameters--wa'] = r'w_{a}' #'$H_0$'
+
+    labels['intrinsic_alignment_parameters--a'] = r'A_{\rm IA}'
+    labels['intrinsic_alignment_parameters--alpha'] = r'\alpha_{\rm IA}'
+
+    labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+    labels['cosmological_parameters--sigma8_input'] = r'\sigma_8'
+    labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
+    labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
+    labels['like'] = r'\mathcal{L}'
+    labels['prior'] = r'\log p_{\rm prior}'
+    labels['post'] = r'\log p_{\rm post}'
+    labels['weight'] = r'\log p_{\rm post}'
+
+
+    for i in range(0, 20):
+        labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
+        labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{}'.format(i)
+        labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{}'.format(i)
+        labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{}'.format(i)
+        labels['wl_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^s}}_{}'.format(i)
+        labels['lens_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^l}}_{}'.format(i)
+        labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{}'.format(i)
+
+    labels['planck--a_planck'] = r'A_{\rm Planck}'
+
     if plotter=='chainconsumer':
-        labels = {}
-        labels['cosmological_parameters--omega_m'] = '$\\Omega_{\\rm m}$' #'^{\\rm geo}$'
-        labels['cosmological_parameters_growth--omega_m_growth'] = '$\\Omega_{\\rm m}^{\\rm growth}$'
-        labels['cosmological_parameters--omega_b'] = '$\\Omega_{\\rm b}$'
-        labels['cosmological_parameters--omega_c'] = '$\\Omega_{\\rm c}$'
-        labels['cosmological_parameters--omnuh2'] = '$\\Omega_{\\nu} h^2$'
-        labels['cosmological_parameters--h0'] = '$h$' #'$H_0$'
-        labels['cosmological_parameters--n_s'] = '$n_{\\rm s}$'
-        labels['cosmological_parameters--a_s'] = '$A_{\\rm s}$'
-        labels['cosmological_parameters--tau'] = '$\\tau$' #'$H_0$'
-        labels['cosmological_parameters--w'] = '$w$' #'$H_0$'
+        for k in labels.keys():
+            labels[k] = r'$'+labels[k]+r'$'
 
-        labels['intrinsic_alignment_parameters--a'] = '$A_{\\rm IA}$'
-        labels['intrinsic_alignment_parameters--alpha'] = '$\\alpha_{\\rm IA}$'
+    return labels
+# def cosmosis_labels(plotter='getdist'):
+#     if plotter=='chainconsumer':
+#         labels = {}
+#         labels['cosmological_parameters--omega_m'] = '$\\Omega_{\\rm m}$' #'^{\\rm geo}$'
+#         labels['cosmological_parameters_growth--omega_m_growth'] = '$\\Omega_{\\rm m}^{\\rm growth}$'
+#         labels['cosmological_parameters--omega_b'] = '$\\Omega_{\\rm b}$'
+#         labels['cosmological_parameters--omega_c'] = '$\\Omega_{\\rm c}$'
+#         labels['cosmological_parameters--omnuh2'] = '$\\Omega_{\\nu} h^2$'
+#         labels['cosmological_parameters--h0'] = '$h$' #'$H_0$'
+#         labels['cosmological_parameters--n_s'] = '$n_{\\rm s}$'
+#         labels['cosmological_parameters--a_s'] = '$A_{\\rm s}$'
+#         labels['cosmological_parameters--tau'] = '$\\tau$' #'$H_0$'
+#         labels['cosmological_parameters--w'] = '$w$' #'$H_0$'
 
-        labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = '$\\sigma_8$'
-        labels['COSMOLOGICAL_PARAMETERS--S_8'] = '$S_8$'
-        labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
-        labels['like'] = '$\\mathcal{L}$'
-        labels['prior'] = '$\\log p_{\\rm prior}$'
-        labels['post'] = '$\\log p_{\\rm post}$'
-        labels['weight'] = '$\\log p_{\\rm post}$'
+#         labels['intrinsic_alignment_parameters--a'] = '$A_{\\rm IA}$'
+#         labels['intrinsic_alignment_parameters--alpha'] = '$\\alpha_{\\rm IA}$'
+
+#         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = '$\\sigma_8$'
+#         labels['cosmological_parameters--sigma8_input'] = '$\\sigma_8$'
+#         labels['COSMOLOGICAL_PARAMETERS--S_8'] = '$S_8$'
+#         labels['DATA_VECTOR--2PT_CHI2'] = '$\\chi^2$'
+#         labels['like'] = '$\\mathcal{L}$'
+#         labels['prior'] = '$\\log p_{\\rm prior}$'
+#         labels['post'] = '$\\log p_{\\rm post}$'
+#         labels['weight'] = '$\\log p_{\\rm post}$'
         
-        for i in range(0, 10):
-            labels['bin_bias--b{}'.format(i)] = '$b_{}$'.format(i)
-            labels['shear_calibration_parameters--m{}'.format(i)] = '$m_{}$'.format(i)
-            labels['wl_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^s_{}$'.format(i)
-            labels['lens_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^l_{}$'.format(i)
-            labels['rescale_Pk_fz--alpha_{}'.format(i)] = '$\\alpha^{{\\sigma_8(z)}}_{}$'.format(i)
+#         for i in range(0, 10):
+#             labels['bin_bias--b{}'.format(i)] = '$b_{}$'.format(i)
+#             labels['shear_calibration_parameters--m{}'.format(i)] = '$m_{}$'.format(i)
+#             labels['wl_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^s_{}$'.format(i)
+#             labels['lens_photoz_errors--bias_{}'.format(i)] = '$\\Delta z^l_{}$'.format(i)
+#             labels['rescale_Pk_fz--alpha_{}'.format(i)] = '$\\alpha^{{\\sigma_8(z)}}_{}$'.format(i)
         
-        labels['planck--a_planck'] = '$A_{\\rm Planck}$'
+#         labels['planck--a_planck'] = '$A_{\\rm Planck}$'
 
         
-        return labels
+#         return labels
         
-    if plotter=='getdist':
-        labels = {}
-        labels['cosmological_parameters--omega_m'] = r'\Omega_{\rm m}' #'^{\\rm geo}$'
-        labels['cosmological_parameters_growth--omega_m_growth'] = r'\Omega_{\rm m}^{\rm growth}'
-        labels['cosmological_parameters--omega_b'] = r'\Omega_{\rm b}'
-        labels['cosmological_parameters--omega_c'] = r'\Omega_{\rm c}'
-        labels['cosmological_parameters--omnuh2'] = r'\Omega_{\nu} h^2'
-        labels['cosmological_parameters--h0'] = r'h' #'$H_0$'
-        labels['cosmological_parameters--n_s'] = r'n_{\rm s}'
-        labels['cosmological_parameters--a_s'] = r'A_{\rm s}'
-        labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
-        labels['cosmological_parameters--w'] = r'w' #'$H_0$'
+#     if plotter=='getdist':
+#         labels = {}
+#         labels['cosmological_parameters--omega_m'] = r'\Omega_{\rm m}' #'^{\\rm geo}$'
+#         labels['cosmological_parameters_growth--omega_m_growth'] = r'\Omega_{\rm m}^{\rm growth}'
+#         labels['cosmological_parameters--omega_b'] = r'\Omega_{\rm b}'
+#         labels['cosmological_parameters--omega_c'] = r'\Omega_{\rm c}'
+#         labels['cosmological_parameters--omnuh2'] = r'\Omega_{\nu} h^2'
+#         labels['cosmological_parameters--h0'] = r'h' #'$H_0$'
+#         labels['cosmological_parameters--n_s'] = r'n_{\rm s}'
+#         labels['cosmological_parameters--a_s'] = r'A_{\rm s}'
+#         labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
+#         labels['cosmological_parameters--w'] = r'w' #'$H_0$'
 
-        labels['intrinsic_alignment_parameters--a'] = 'A_{\rm IA}'
-        labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
+#         labels['intrinsic_alignment_parameters--a'] = 'A_{\rm IA}'
+#         labels['intrinsic_alignment_parameters--alpha'] = '\alpha_{\rm IA}'
 
-        labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
-        labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
-        labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
-        labels['like'] = r'\mathcal{L}'
-        labels['prior'] = r'\log p_{\rm prior}'
-        labels['post'] = r'\log p_{\rm post}'
-        labels['weight'] = r'\log p_{\rm post}'
+#         labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+#         labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
+#         labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
+#         labels['like'] = r'\mathcal{L}'
+#         labels['prior'] = r'\log p_{\rm prior}'
+#         labels['post'] = r'\log p_{\rm post}'
+#         labels['weight'] = r'\log p_{\rm post}'
 
 
-        for i in range(0, 10):
-            labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
-            labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{}'.format(i)
-            labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{}'.format(i)
-            labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{}'.format(i)
-            labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{}'.format(i)
+#         for i in range(0, 10):
+#             labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
+#             labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{}'.format(i)
+#             labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{}'.format(i)
+#             labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{}'.format(i)
+#             labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{}'.format(i)
 
-        labels['planck--a_planck'] = r'A_{\rm Planck}'
+#         labels['planck--a_planck'] = r'A_{\rm Planck}'
 
-        return labels
+#         return labels
     
 
 
