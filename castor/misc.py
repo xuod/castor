@@ -130,7 +130,7 @@ def print_h5py_tree(f):
         print(path, dset)
 
 
-def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True):
+def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False):
     """
     Loading a cosmosis chain
 
@@ -214,11 +214,47 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         weights = np.ones_like(dico[keys[0]])
     
     if verbose:
-        print("- using params")
+        print("- using {} params".format(len(keys)))
         print(keys)
         print("- using nsample = ", nsample, len(weights))
         
-    return dico, weights
+    if get_ranges_truth:
+        ranges = {}
+        truth = {}
+        for p in dico.keys():
+            found_section = False
+            print(p, p.split('--'))
+            split_p = p.split('--')
+            # print('## [{}]'.format(split_p[0]) )
+            if len(split_p)==2:
+                with open(filename, 'r') as file:
+                    while True:
+                        line = file.readline()
+                        if '## [{}]'.format(split_p[0]) in line:
+                            # if verbose:
+                                # print('Found section')
+                            found_section = True
+                            continue
+                        if line.startswith('## {}'.format(split_p[1])) and found_section:
+                            try:
+                                vals = line.split('=')[1]
+                                low, fid, upp = map(float, vals.split())
+                                if verbose:
+                                    print('Found values', low, fid, upp)
+                                ranges[p] = [low, upp]
+                                truth[p] = fid
+                                break
+                            except:
+                                print('ERROR with {}: found line but not able to parse values'.format(p))
+                        else:
+                            if line.startswith('#'):
+                                continue
+                            else:
+                                print('ERROR with {}: did not find line'.format(p))
+                                break
+        return dico, weights, ranges, truth
+    else:
+        return dico, weights
 
 
 def cosmosis_labels(plotter='getdist'):
@@ -238,7 +274,14 @@ def cosmosis_labels(plotter='getdist'):
     labels['intrinsic_alignment_parameters--a'] = r'A_{\rm IA}'
     labels['intrinsic_alignment_parameters--alpha'] = r'\alpha_{\rm IA}'
 
+    labels['intrinsic_alignment_parameters--a1'] = r'A_{\rm IA}^1'
+    labels['intrinsic_alignment_parameters--alpha1'] = r'\alpha_{\rm IA}^1'
+    labels['intrinsic_alignment_parameters--a2'] = r'A_{\rm IA}^2'
+    labels['intrinsic_alignment_parameters--alpha2'] = r'\alpha_{\rm IA}^2'
+    labels['intrinsic_alignment_parameters--bias_ta'] = r'b_{\rm TA}^2'
+
     labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+    labels['COSMOLOGICAL_PARAMETERS--SIGMA_12'] = r'\sigma_{12}'
     labels['cosmological_parameters--sigma8_input'] = r'\sigma_8'
     labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
     labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
