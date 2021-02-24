@@ -530,13 +530,13 @@ def hotelling_T2(X, mu0=0.):
 
 try:
     import numba
-    @numba.jit(nopython=True, parallel=True)
+    @numba.jit(nopython=True, parallel=False) # this operation does NOT support parallelization!
     def _add_at_cst(a,index,b):
         n = len(index)
         for i in numba.prange(n):
             a[index[i]] += b
 
-    @numba.jit(nopython=True, parallel=True)
+    @numba.jit(nopython=True, parallel=False)
     def _add_at(a,index,b):
         n = len(b)
         for i in numba.prange(n):

@@ -130,7 +130,7 @@ def print_h5py_tree(f):
         print(path, dset)
 
 
-def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False):
+def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False, read_nsamples=True, return_mcsample=False, labels=None, add_S8=False):
     """
     Loading a cosmosis chain
 
@@ -151,6 +151,7 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         return nsamples
 
     
+    
     with open(filename, 'r') as file:
         # Read all parameters names
         s = file.readline()
@@ -159,44 +160,46 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         # Read sampler        
         s = file.readline()
         # print(s)
-        if s == '#sampler=multinest\n':
-            print("Loading Multinest chain at")
-            print(filename)
-            list_s = file.read().splitlines()
-            nsample = int(list_s[-3].replace('#nsample=',''))
-        elif s == "#sampler=polychord\n":
-            print("Loading Polychord chain at")
-            print(filename)
-            list_s = file.read().splitlines()
-            nsample = int(list_s[-3].replace('#nsample=',''))
-        elif s == '#sampler=emcee\n':
-            print("Loading emcee chain at")
-            print(filename)
-            nsample = 0
-        elif s == '#sampler=list\n':
-            print("Loading list chain at")
-            print(filename)
-            nsample = 0
-        elif s == "#sampler=maxlike\n":
-            print("Loading maxlike chain at")
-            print(filename)
-            nsample = 0
-        elif s == "#sampler=metropolis\n":
-            print("Loading metropolis chain at")
-            print(filename)
-            nsample = 0
-        elif s == "#sampler=importance\n":
-            print("Loading importance chain at")
-            print(filename)
-            nsample = 0
-        elif s == "#sampler=pmc\n":
-            print("Loading pmc chain at")
-            print(filename)
-            list_s = file.read().splitlines()
-            nsample = int(list_s[-1].replace('#nsample=',''))
+        if read_nsamples:
+            if s == '#sampler=multinest\n':
+                print("Loading Multinest chain at")
+                print(filename)
+                list_s = file.read().splitlines()
+                nsample = int(list_s[-3].replace('#nsample=',''))
+            elif s == "#sampler=polychord\n":
+                print("Loading Polychord chain at")
+                print(filename)
+                list_s = file.read().splitlines()
+                nsample = int(list_s[-3].replace('#nsample=',''))
+            elif s == '#sampler=emcee\n':
+                print("Loading emcee chain at")
+                print(filename)
+                nsample = 0
+            elif s == '#sampler=list\n':
+                print("Loading list chain at")
+                print(filename)
+                nsample = 0
+            elif s == "#sampler=maxlike\n":
+                print("Loading maxlike chain at")
+                print(filename)
+                nsample = 0
+            elif s == "#sampler=metropolis\n":
+                print("Loading metropolis chain at")
+                print(filename)
+                nsample = 0
+            elif s == "#sampler=importance\n":
+                print("Loading importance chain at")
+                print(filename)
+                nsample = 0
+            elif s == "#sampler=pmc\n":
+                print("Loading pmc chain at")
+                print(filename)
+                list_s = file.read().splitlines()
+                nsample = int(list_s[-1].replace('#nsample=',''))
+            else:
+                raise NotImplementedError
         else:
-            raise NotImplementedError
-
+            nsample = 0
     
     # Load the chain
     chain = np.atleast_2d(np.loadtxt(filename))   
@@ -218,9 +221,14 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         print(keys)
         print("- using nsample = ", nsample, len(weights))
         
+    if add_S8:
+        assert ('cosmological_parameters--omega_m' in keys) and ('COSMOLOGICAL_PARAMETERS--SIGMA_8' in keys)
+        dico['COSMOLOGICAL_PARAMETERS--S_8'] = dico['COSMOLOGICAL_PARAMETERS--SIGMA_8'] * np.sqrt(dico['cosmological_parameters--omega_m'] / 0.3)
+        keys.append('COSMOLOGICAL_PARAMETERS--S_8')
+    
+    ranges = {}
+    truth = {}
     if get_ranges_truth:
-        ranges = {}
-        truth = {}
         for p in dico.keys():
             found_section = False
             print(p, p.split('--'))
@@ -252,9 +260,18 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
                             else:
                                 print('ERROR with {}: did not find line'.format(p))
                                 break
-        return dico, weights, ranges, truth
+
+    if return_mcsample:
+        from getdist import MCSamples
+        if labels is None:
+            labels = cosmosis_labels(plotter='getdist')
+        params = keys #[s for s in keys if params_lambda(s)]
+        return MCSamples(samples=[dico[p] for p in params], weights=weights, labels=[labels[p] for p in params], names=[p for p in params], ranges=ranges)
     else:
-        return dico, weights
+        if get_ranges_truth:
+            return dico, weights, ranges, truth
+        else:
+            return dico, weights
 
 
 def cosmosis_labels(plotter='getdist'):
