@@ -160,6 +160,8 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         # Read sampler        
         s = file.readline()
         # print(s)
+        is_importance = False
+        old_weights = None
         if read_nsamples:
             if s == '#sampler=multinest\n':
                 print("Loading Multinest chain at")
@@ -179,6 +181,10 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
                 print("Loading list chain at")
                 print(filename)
                 nsample = 0
+            elif s == '#sampler=apriori\n':
+                print("Loading list chain at")
+                print(filename)
+                nsample = 0
             elif s == "#sampler=maxlike\n":
                 print("Loading maxlike chain at")
                 print(filename)
@@ -191,6 +197,7 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
                 print("Loading importance chain at")
                 print(filename)
                 nsample = 0
+                is_importance=True
             elif s == "#sampler=pmc\n":
                 print("Loading pmc chain at")
                 print(filename)
@@ -212,9 +219,19 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
             dico[s] = chain[-nsample:,i]
         if s == 'weight':
             weights = chain[-nsample:,i]
+        if s == 'log_weight':
+            log_weights = chain[-nsample:,i]
+        if s == 'old_weight':
+            old_weights = chain[-nsample:,i]
     
     if 'weight' not in s_a:
         weights = np.ones_like(dico[keys[0]])
+        
+    if is_importance:
+        weights = np.exp(log_weights - np.max(log_weights))
+        if old_weights is not None:
+            weights *= old_weights
+        weights /= np.sum(weights)
     
     if verbose:
         print("- using {} params".format(len(keys)))
@@ -302,7 +319,9 @@ def cosmosis_labels(plotter='getdist'):
     labels['intrinsic_alignment_parameters--bias_ta'] = r'b_{\rm TA}^2'
 
     labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
+    labels['cosmological_parameters--sigma_8'] = r'\sigma_8'
     labels['COSMOLOGICAL_PARAMETERS--SIGMA_12'] = r'\sigma_{12}'
+    labels['cosmological_parameters--sigma_12'] = r'\sigma_{12}'
     labels['cosmological_parameters--sigma8_input'] = r'\sigma_8'
     labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
     labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
