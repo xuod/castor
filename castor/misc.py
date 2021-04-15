@@ -266,7 +266,11 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         if labels is None:
             labels = cosmosis_labels(plotter='getdist')
         params = keys #[s for s in keys if params_lambda(s)]
-        return MCSamples(samples=[dico[p] for p in params], weights=weights, labels=[labels[p] for p in params], names=[p for p in params], ranges=ranges)
+        mc = MCSamples(samples=[dico[p] for p in params], weights=weights, labels=[labels[p] for p in params], names=[p for p in params], ranges=ranges)
+        if get_ranges_truth:
+            return mc, ranges, truth
+        else:
+            return mc
     else:
         if get_ranges_truth:
             return dico, weights, ranges, truth
