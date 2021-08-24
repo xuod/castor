@@ -1,5 +1,6 @@
 from astropy.io import fits
 import numpy as np
+from collections import OrderedDict
 
 def fitsdata(filename, hdu_number=1):
     """
@@ -130,7 +131,7 @@ def print_h5py_tree(f):
         print(path, dset)
 
 
-def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False, read_nsamples=True, return_mcsample=False, labels=None, add_S8=False, is_clipping_k=None):
+def load_cosmosis_chain(filename, params_lambda='all', verbose=True, get_ranges_truth=False, read_nsamples=True, return_mcsample=False, labels=None, add_S8=False, is_clipping_k=None, print_min_chi2=False, print_map_chi2=False, return_map_chi2=False, shift_mean_to_zero=False, shift_mean_random=False):
     """
     Loading a cosmosis chain
 
@@ -140,7 +141,6 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
     params_lambda : function that takes cosmosis parameter's name and returns True/False whether it should be used.
     verbose :
     """
-    from collections import OrderedDict
 
     def get_nsample(filename):
         with open(filename,"r") as fi:
@@ -150,8 +150,19 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
                     break
         return nsamples
 
-    
-    
+    assert [bool(get_ranges_truth), bool(shift_mean_to_zero), bool(shift_mean_random)].count(True) <= 1
+
+    if params_lambda=='all':
+        params_lambda = lambda x : True
+    elif params_lambda=='cosmo':
+        params_lambda = lambda x : 'cosmo' in x.lower()
+    elif params_lambda=='varied':
+        params_lambda = lambda x : '--' in x and x.lower()==x
+    elif params_lambda=='varied_extra':
+        params_lambda = lambda x : '--' in x
+    else:
+        pass
+
     with open(filename, 'r') as file:
         # Read all parameters names
         s = file.readline()
@@ -162,49 +173,59 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         # print(s)
         is_importance = False
         old_weights = None
+        post = None
         if read_nsamples:
             if s == '#sampler=multinest\n':
-                print("Loading Multinest chain at")
-                print(filename)
+                if verbose:
+                    print("Loading Multinest chain at")
+                    print(filename)
                 list_s = file.read().splitlines()
                 nsample = int(list_s[-3].replace('#nsample=',''))
             elif s == "#sampler=polychord\n":
-                print("Loading Polychord chain at")
-                print(filename)
+                if verbose:
+                    print("Loading Polychord chain at")
+                    print(filename)
                 list_s = file.read().splitlines()
                 nsample = int(list_s[-3].replace('#nsample=',''))
             elif s == '#sampler=emcee\n':
-                print("Loading emcee chain at")
-                print(filename)
+                if verbose:
+                    print("Loading emcee chain at")
+                    print(filename)
                 nsample = 0
             elif s == '#sampler=list\n':
-                print("Loading list chain at")
-                print(filename)
+                if verbose:
+                    print("Loading list chain at")
+                    print(filename)
                 nsample = 0
             elif s == '#sampler=apriori\n':
-                print("Loading list chain at")
-                print(filename)
+                if verbose:
+                    print("Loading list chain at")
+                    print(filename)
                 nsample = 0
             elif s == "#sampler=maxlike\n":
-                print("Loading maxlike chain at")
-                print(filename)
+                if verbose:
+                    print("Loading maxlike chain at")
+                    print(filename)
                 nsample = 0
             elif s == "#sampler=metropolis\n":
-                print("Loading metropolis chain at")
-                print(filename)
+                if verbose:
+                    print("Loading metropolis chain at")
+                    print(filename)
                 nsample = 0
             elif s == "#sampler=fisher\n":
                 print("Loading metropolis chain at")
                 print(filename)
                 nsample = 0
             elif s == "#sampler=importance\n":
-                print("Loading importance chain at")
-                print(filename)
+                if verbose:
+                    print("Loading importance chain at")
+                    print(filename)
                 nsample = 0
                 is_importance=True
             elif s == "#sampler=pmc\n":
-                print("Loading pmc chain at")
-                print(filename)
+                if verbose:
+                    print("Loading pmc chain at")
+                    print(filename)
                 list_s = file.read().splitlines()
                 nsample = int(list_s[-1].replace('#nsample=',''))
             else:
@@ -217,17 +238,37 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
 
     dico = OrderedDict()
     keys = []
+    chi2 = None
+    post = None
     for i, s in enumerate(s_a):
         if params_lambda(s):
             keys.append(s)
             dico[s] = chain[-nsample:,i]
+
         if s == 'weight':
             weights = chain[-nsample:,i]
-        if s == 'log_weight':
+        elif s == 'log_weight':
             log_weights = chain[-nsample:,i]
-        if s == 'old_weight':
+        elif s == 'old_weight':
             old_weights = chain[-nsample:,i]
-    
+        elif s == 'DATA_VECTOR--2PT_CHI2':
+            chi2 = chain[-nsample:,i]
+        elif s == 'post' or return_mcsample:
+            post = chain[-nsample:,i]
+        else:
+            pass
+
+
+    if print_min_chi2:
+        assert chi2 is not None
+        print("Min chi2 = {:.1f}".format(np.min(chi2)))
+
+    if print_map_chi2 or return_map_chi2:
+        assert chi2 is not None
+        assert post is not None
+        map_chi2 = chi2[np.argmax(post)]
+        print("MAP chi2 = {:.1f}".format(map_chi2))
+
     if 'weight' not in s_a:
         weights = np.ones_like(dico[keys[0]])
         
@@ -237,24 +278,49 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
             weights = np.clip(weights, 0., np.mean(weights) * len(weights)**is_clipping_k)
         if old_weights is not None:
             weights *= old_weights
+        if is_clipping_k is not None:
+            weights = np.clip(weights, 0., np.mean(weights) * len(weights)**is_clipping_k)
         weights /= np.sum(weights)
-    
+
     if verbose:
         print("- using {} params".format(len(keys)))
         print(keys)
         print("- using nsample = ", nsample, len(weights))
         
     if add_S8:
-        assert ('cosmological_parameters--omega_m' in keys) and ('COSMOLOGICAL_PARAMETERS--SIGMA_8' in keys)
-        dico['COSMOLOGICAL_PARAMETERS--S_8'] = dico['COSMOLOGICAL_PARAMETERS--SIGMA_8'] * np.sqrt(dico['cosmological_parameters--omega_m'] / 0.3)
+        assert ('cosmological_parameters--omega_m' in keys)
+        assert ('COSMOLOGICAL_PARAMETERS--SIGMA_8' in keys) or ('cosmological_parameters--sigma_8_input' in keys)
+        if 'cosmological_parameters--sigma_8_input' in keys:
+            dico['COSMOLOGICAL_PARAMETERS--S_8'] = dico['cosmological_parameters--sigma_8_input'] * np.sqrt(dico['cosmological_parameters--omega_m'] / 0.3)
+        else:
+            dico['COSMOLOGICAL_PARAMETERS--S_8'] = dico['COSMOLOGICAL_PARAMETERS--SIGMA_8'] * np.sqrt(dico['cosmological_parameters--omega_m'] / 0.3)
         keys.append('COSMOLOGICAL_PARAMETERS--S_8')
     
+    if labels is None:
+        labels = cosmosis_labels(plotter='getdist')
+
+    if shift_mean_to_zero:
+        assert not get_ranges_truth
+        for s in dico.keys():
+            if '--' in s:
+                dico[s] -= np.average(dico[s], weights=weights)
+
+    if shift_mean_random:
+        labels_keys = list(labels.keys())
+        if type(shift_mean_random) is int:
+            np.random.seed(shift_mean_random)
+        shifts = np.random.normal(loc=0, scale=1000, size=len(labels_keys))
+        for i,s in enumerate(dico.keys()):
+            if '--' in s:
+                dico[s] += shifts[labels_keys.index(s.lower())]
+
     ranges = {}
     truth = {}
     if get_ranges_truth:
         for p in dico.keys():
             found_section = False
-            print(p, p.split('--'))
+            if verbose:
+                print(p, p.split('--'))
             split_p = p.split('--')
             # print('## [{}]'.format(split_p[0]) )
             if len(split_p)==2:
@@ -286,36 +352,46 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
 
     if return_mcsample:
         from getdist import MCSamples
-        if labels is None:
-            labels = cosmosis_labels(plotter='getdist')
         params = keys #[s for s in keys if params_lambda(s)]
-        mc = MCSamples(samples=[dico[p] for p in params], weights=weights, labels=[labels[p] for p in params], names=[p for p in params], ranges=ranges)
-        if get_ranges_truth:
-            return mc, ranges, truth
-        else:
-            return mc
+        mc = MCSamples(samples=[dico[p] for p in params], weights=weights, labels=[labels[p.lower()] for p in params], names=[p for p in params], ranges=ranges, loglikes=-1.0*post)
+        out = [mc]
     else:
-        if get_ranges_truth:
-            return dico, weights, ranges, truth
-        else:
-            return dico, weights
+        out = [dico, weights]
+
+    if get_ranges_truth:
+        out = out + [ranges, truth]
+
+    if return_map_chi2:
+        out = out + [map_chi2]
+
+    if len(out)==1:
+        return out[0]
+    else:
+        return out
 
 
 def cosmosis_labels(plotter='getdist'):
-    labels = {}
+    labels = OrderedDict()
     labels['cosmological_parameters--omega_m'] = r'\Omega_{\rm m}' #'^{\\rm geo}$'
     labels['cosmological_parameters_growth--omega_m_growth'] = r'\Omega_{\rm m}^{\rm growth}'
     labels['cosmological_parameters--omega_b'] = r'\Omega_{\rm b}'
     labels['cosmological_parameters--omega_c'] = r'\Omega_{\rm c}'
+    labels['cosmological_parameters--omega_nu'] = r'\Omega_{\nu}'
+    labels['cosmological_parameters--omega_lambda'] = r'\Omega_{\Lambda}'
+    labels['cosmological_parameters--omch2'] = r'\Omega_{\rm c} h^2' #'$H_0$'
+    labels['cosmological_parameters--ombh2'] = r'\Omega_{\rm b} h^2' #'$H_0$'
     labels['cosmological_parameters--omnuh2'] = r'\Omega_{\nu} h^2'
     labels['cosmological_parameters--h0'] = r'h' #'$H_0$'
     labels['cosmological_parameters--n_s'] = r'n_{\rm s}'
+    labels['cosmological_parameters--A_s'] = r'A_{\rm s}'
     labels['cosmological_parameters--a_s'] = r'A_{\rm s}'
     labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
     labels['cosmological_parameters--w'] = r'w' #'$H_0$'
     labels['cosmological_parameters--wa'] = r'w_{a}' #'$H_0$'
     labels['cosmological_parameters--log10t_agn'] = r'\log_{10}(T_{\rm AGN})' #'$H_0$'
-
+    labels['cosmological_parameters--ombh2'] = r'\Omega_{\rm b} h^2' #'$H_0$'
+    labels['cosmological_parameters--cosmomc_theta'] = r'\theta_{\rm MC}' #'$H_0$'
+    
     labels['intrinsic_alignment_parameters--a'] = r'A_{\rm IA}'
     labels['intrinsic_alignment_parameters--alpha'] = r'\alpha_{\rm IA}'
 
@@ -328,26 +404,35 @@ def cosmosis_labels(plotter='getdist'):
     labels['intrinsic_alignment_parameters--eta'] = r'\eta_{\rm IA}'
     labels['intrinsic_alignment_parameters--eta_highz'] = r'\eta_{\rm IA}^{{\rm high-}z}'
 
-    labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
     labels['cosmological_parameters--sigma_8'] = r'\sigma_8'
-    labels['COSMOLOGICAL_PARAMETERS--SIGMA_12'] = r'\sigma_{12}'
     labels['cosmological_parameters--sigma_12'] = r'\sigma_{12}'
     labels['cosmological_parameters--sigma8_input'] = r'\sigma_8'
-    labels['COSMOLOGICAL_PARAMETERS--S_8'] = r'S_8'
-    labels['DATA_VECTOR--2PT_CHI2'] = r'\chi^2'
+    labels['cosmological_parameters--sigma_8_input'] = r'\sigma_8'
+    labels['cosmological_parameters--s_8_input'] = r'\sigma_8'
+    labels['cosmological_parameters--s_8'] = r'S_8'
+
+    labels['data_vector--2pt_chi2'] = r'\chi^2'
     labels['like'] = r'\mathcal{L}'
     labels['prior'] = r'\log p_{\rm prior}'
     labels['post'] = r'\log p_{\rm post}'
-    labels['weight'] = r'\log p_{\rm post}'
+    labels['old_post'] = r'\log p_{\rm post}^{\rm old}'
+    labels['log_weight'] = r'\log w_i'
+    labels['weight'] = r'w_i'
+    labels['old_weight'] = r'w_i^{\rm old}'
+    labels['ranks--realisation_id'] = r'\mathcal{H}_{\rm ID}'
 
     for i in range(0, 20):
-        labels['bin_bias--b{}'.format(i)] = r'b_{{{}}}'.format(i)
+        labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
+        labels['bias_lens--b{}'.format(i)] = r'b_{}'.format(i)
         labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{{{}}}'.format(i)
         labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{{{}}}'.format(i)
         labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{{{}}}'.format(i)
         labels['wl_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^s}}_{{{}}}'.format(i)
+        labels['lens_photoz_errors--width_{}'.format(i)] = r'{{\sigma_z^l}}_{{{}}}'.format(i)
         labels['lens_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^l}}_{{{}}}'.format(i)
         labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{{{}}}'.format(i)
+        labels['ranks--rank_hyperparm_{}'.format(i)] = r'\mathcal{{H}}_{{{}}}'.format(i)
+        labels['ranks--mean_z_{}'.format(i)] = r'\bar{{z}}^\mathcal{{H}}_{{{}}}'.format(i)
 
     labels['planck--a_planck'] = r'A_{\rm Planck}'
 
