@@ -130,7 +130,7 @@ def print_h5py_tree(f):
         print(path, dset)
 
 
-def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False, read_nsamples=True, return_mcsample=False, labels=None, add_S8=False):
+def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('COSMO'), verbose=True, get_ranges_truth=False, read_nsamples=True, return_mcsample=False, labels=None, add_S8=False, is_clipping_k=None):
     """
     Loading a cosmosis chain
 
@@ -193,6 +193,10 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
                 print("Loading metropolis chain at")
                 print(filename)
                 nsample = 0
+            elif s == "#sampler=fisher\n":
+                print("Loading metropolis chain at")
+                print(filename)
+                nsample = 0
             elif s == "#sampler=importance\n":
                 print("Loading importance chain at")
                 print(filename)
@@ -229,6 +233,8 @@ def load_cosmosis_chain(filename, params_lambda=lambda s:s.upper().startswith('C
         
     if is_importance:
         weights = np.exp(log_weights - np.max(log_weights))
+        if is_clipping_k is not None:
+            weights = np.clip(weights, 0., np.mean(weights) * len(weights)**is_clipping_k)
         if old_weights is not None:
             weights *= old_weights
         weights /= np.sum(weights)
@@ -308,6 +314,7 @@ def cosmosis_labels(plotter='getdist'):
     labels['cosmological_parameters--tau'] = r'\tau' #'$H_0$'
     labels['cosmological_parameters--w'] = r'w' #'$H_0$'
     labels['cosmological_parameters--wa'] = r'w_{a}' #'$H_0$'
+    labels['cosmological_parameters--log10t_agn'] = r'\log_{10}(T_{\rm AGN})' #'$H_0$'
 
     labels['intrinsic_alignment_parameters--a'] = r'A_{\rm IA}'
     labels['intrinsic_alignment_parameters--alpha'] = r'\alpha_{\rm IA}'
@@ -317,6 +324,9 @@ def cosmosis_labels(plotter='getdist'):
     labels['intrinsic_alignment_parameters--a2'] = r'A_{\rm IA}^2'
     labels['intrinsic_alignment_parameters--alpha2'] = r'\alpha_{\rm IA}^2'
     labels['intrinsic_alignment_parameters--bias_ta'] = r'b_{\rm TA}^2'
+    labels['intrinsic_alignment_parameters--beta'] = r'\beta_{\rm IA}'
+    labels['intrinsic_alignment_parameters--eta'] = r'\eta_{\rm IA}'
+    labels['intrinsic_alignment_parameters--eta_highz'] = r'\eta_{\rm IA}^{{\rm high-}z}'
 
     labels['COSMOLOGICAL_PARAMETERS--SIGMA_8'] = r'\sigma_8'
     labels['cosmological_parameters--sigma_8'] = r'\sigma_8'
@@ -330,17 +340,19 @@ def cosmosis_labels(plotter='getdist'):
     labels['post'] = r'\log p_{\rm post}'
     labels['weight'] = r'\log p_{\rm post}'
 
-
     for i in range(0, 20):
-        labels['bin_bias--b{}'.format(i)] = r'b_{}'.format(i)
-        labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{}'.format(i)
-        labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{}'.format(i)
-        labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{}'.format(i)
-        labels['wl_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^s}}_{}'.format(i)
-        labels['lens_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^l}}_{}'.format(i)
-        labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{}'.format(i)
+        labels['bin_bias--b{}'.format(i)] = r'b_{{{}}}'.format(i)
+        labels['shear_calibration_parameters--m{}'.format(i)] = r'm_{{{}}}'.format(i)
+        labels['wl_photoz_errors--bias_{}'.format(i)] = r'\Delta z^s_{{{}}}'.format(i)
+        labels['lens_photoz_errors--bias_{}'.format(i)] = r'\Delta z^l_{{{}}}'.format(i)
+        labels['wl_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^s}}_{{{}}}'.format(i)
+        labels['lens_photoz_errors--sigma_{}'.format(i)] = r'{{\sigma_z^l}}_{{{}}}'.format(i)
+        labels['rescale_Pk_fz--alpha_{}'.format(i)] = r'\alpha^{{\sigma_8(z)}}_{{{}}}'.format(i)
 
     labels['planck--a_planck'] = r'A_{\rm Planck}'
+
+    labels['wl_photoz_errors--sigma'] = r'\sigma_z^s'
+    labels['lens_photoz_errors--sigma'] = r'\sigma_z^l'
 
     if plotter=='chainconsumer':
         for k in labels.keys():
